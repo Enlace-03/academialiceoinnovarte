@@ -1,0 +1,10 @@
+---
+deployment:
+  tasks:
+    - export REPO=/home/USUARIO/repositories/liceo
+    - /bin/chmod -R ug+rwX $REPO/storage $REPO/bootstrap/cache
+    - /bin/rm -f $REPO/bootstrap/cache/config.php
+    - /bin/rm -f $REPO/bootstrap/cache/routes-v7.php
+    - /bin/rm -rf $REPO/storage/framework/views/*
+    # Descomentar cuando haya migraciones nuevas:
+    # - /bin/touch $REPO/storage/app/.migrate-pending
