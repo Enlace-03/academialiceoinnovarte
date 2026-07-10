@@ -25,9 +25,10 @@ class AcademicPanelProvider extends PanelProvider
     {
         return $panel
             ->id('academic')
-            ->path('academic')
+            ->path('academia')
+            ->login()
             ->colors([
-                'primary' => Color::Amber,
+                'primary' => Color::Emerald,
             ])
             ->discoverResources(in: app_path('Filament/Academic/Resources'), for: 'App\Filament\Academic\Resources')
             ->discoverPages(in: app_path('Filament/Academic/Pages'), for: 'App\Filament\Academic\Pages')
@@ -52,6 +53,7 @@ class AcademicPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->authGuard('web');
     }
 }
