@@ -34,7 +34,11 @@ return [
         ],
 
         'Institución' => [
-            'institution.manage'         => 'Gestionar grados, grupos, materias, año lectivo',
+            'institution.manage'         => 'Configuración general de la institución y año lectivo',
+            'school-grades.manage'       => 'Crear y editar grados escolares',
+            'groups.manage'              => 'Crear y editar grupos',
+            'subjects.manage'            => 'Crear y editar materias',
+            'subjects.view'              => 'Ver listado de materias',
             'teacher-assignments.manage' => 'Asignar profesores a materias y grupos',
         ],
 
@@ -83,7 +87,9 @@ return [
         'rector' => [
             'users.view', 'users.create', 'users.update', 'users.grant',
             'students.create', 'students.view', 'students.update',
-            'institution.manage', 'teacher-assignments.manage',
+            'institution.manage',
+            'school-grades.manage', 'groups.manage', 'subjects.manage', 'subjects.view',
+            'teacher-assignments.manage',
             'projects.view.all', 'projects.create', 'projects.update.all',
             'phases.manage', 'resources.manage',
             'submissions.evaluate', 'observations.write', 'observations.view.all',
@@ -95,6 +101,7 @@ return [
         'coordinador' => [
             'users.view', 'users.create',
             'students.view',
+            'groups.manage', 'subjects.view',
             'projects.view.all',
             'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all',
@@ -107,6 +114,7 @@ return [
 
         'teacher' => [
             'students.view',
+            'subjects.view',
             'projects.view.own', 'projects.create', 'projects.update.own',
             'phases.manage', 'resources.manage',
             'submissions.evaluate', 'observations.write',

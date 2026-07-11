@@ -1,164 +1,76 @@
-# CLAUDE.md — Plataforma Liceo Innovarte
+# CLAUDE.md — Academia Liceo Innovarte
 
-Contexto del proyecto para Claude Code. Lee esto antes de cualquier tarea.
-
-## Qué es este proyecto
-
-Plataforma educativa para Liceo Innovarte (Colombia): colegio semipresencial con modelo de
-**Aprendizaje Basado en Proyectos (ABP)**, 1° a 9° grado, ~200 estudiantes, 3 docentes.
-NO es un LMS tradicional de cursos/lecciones/exámenes.
+## Proyecto
+Plataforma educativa ABP para Liceo Innovarte. Colombia. ~200 estudiantes, 1°-9°.
+NO es un LMS tradicional — el concepto central es **Proyecto ABP**, no curso/lección.
 
 ## Stack
+- Laravel 13 + PHP 8.3
+- Filament 4 (paneles admin y académico)
+- Livewire 3 + Alpine.js (paneles estudiante y padre)
+- Tailwind CSS
+- MySQL 9.1 (WampServer local, cPanel producción)
+- Colas: database | Cache: database | Sin Redis, sin SSH
 
-- **Laravel 12** + **PHP 8.3**
-- **Livewire 3** (viene con Filament)
-- **Filament 4** (paneles admin y académico)
-- **Tailwind CSS** (v4, viene con Filament)
-- **Alpine.js** (viene con Livewire)
-- **MySQL 8** (hosting cPanel)
-- Sin Vue, sin Inertia, sin Sanctum (hasta la app móvil)
-
-## Restricciones del hosting (cPanel, sin SSH)
-
-- `QUEUE_CONNECTION=database` — nunca sugerir Redis
-- `CACHE_STORE=database` — ni Memcached
-- Todo lo programado corre vía `schedule:run` en cron de cPanel (cada minuto)
-- `queue:work --stop-when-empty --max-time=50` — nunca workers permanentes
-- Deploy: rama `deploy` con `vendor/` y `public/build/` comiteados
-- No supervisord, no Horizon, no daemons
-- 4 GB RAM compartida — jobs deben procesar en `chunk(50)`
-
-## Arquitectura: Filament + Modules + Livewire
-
-### Tres capas de UI
-
-1. **Filament Resources** (paneles admin y académico): CRUDs, tablas, formularios,
-   dashboards. Para admin, rectora y profesores.
-2. **Livewire Components** (pantallas custom): Panel del estudiante y del padre.
-   UI distinta, no admin-like. Vistas en `resources/views/livewire/`.
-3. **Modules** (dominio puro, sin UI): Models, Actions, Events, Policies, Jobs.
-   Viven en `app/Modules/{Contexto}/`. Son llamados tanto por Filament como por Livewire.
-
-### Paneles Filament
-
-| Panel | Ruta | Roles | PanelProvider |
+## Paneles
+| Panel | Ruta | Roles | Tecnología |
 |---|---|---|---|
-| Admin | `/admin` | admin | `AdminPanelProvider` |
-| Académico | `/academia` | rector, teacher | `AcademicPanelProvider` |
+| Admin | `/admin` | admin | Filament — azul |
+| Académico | `/academia` | rector, teacher | Filament — verde |
+| Estudiante | `/` | student | Livewire + Blade |
+| Padre | `/familia` | parent | Livewire + Blade |
 
-Estudiantes y padres NO usan Filament; tienen sus propias rutas web con Livewire.
+## Estructura de carpetas clave
+```
+app/
+├── Filament/Admin/         # Resources, Pages, Widgets del admin
+├── Filament/Academic/      # Resources, Pages, Widgets del académico
+├── Livewire/Student/       # Componentes del estudiante
+├── Livewire/Parent/        # Componentes del padre
+├── Livewire/Shared/        # AvatarDock, RubricBadge, ChatBox
+└── Modules/                # Dominio puro (sin UI)
+    ├── Identity/           # users, perfiles, roles, permisos
+    ├── Institution/        # institución, grados, grupos
+    ├── Project/            # proyectos ABP, fases, guías, recursos
+    ├── Assessment/         # entregas, rúbricas, evaluaciones
+    ├── Community/          # foros, chat
+    ├── Tracking/           # progreso, métricas, learning_events
+    ├── Analytics/          # dashboards, KPIs
+    ├── Prediction/         # reglas de riesgo, alertas
+    ├── Avatar/             # 4 avatares, mensajes, onboarding
+    ├── Communication/      # notificaciones
+    └── Shared/             # enums, DTOs, helpers
+```
 
-### Reglas de arquitectura (no negociables)
+## Reglas absolutas (nunca violar)
+1. Filament Resources y Livewire Components NO contienen lógica de negocio → va en Actions
+2. Todo hecho significativo dispara un evento de dominio → listeners reaccionan
+3. `learning_events` NO tiene foreign keys (tabla particionada)
+4. Niveles de rúbrica NUNCA se muestran como números → siempre texto + color
+5. UUIDs en URLs de estudiantes → nunca IDs autoincrementales
+6. No self-signup → solo admin o rector crean cuentas
+7. No Redis, no Horizon, no supervisord → colas en BD, workers con `--stop-when-empty`
+8. Techo de delegación: nadie otorga permisos que no tiene → validar en AssignPermissionsAction
 
-1. **Filament Resources y Livewire Components no contienen lógica de negocio.**
-   Llaman a Actions del módulo correspondiente. Filament Actions (botones de tabla)
-   delegan en Module Actions. No confundir los dos.
-2. **Una Action de módulo = un caso de uso**, con `execute()`.
-   Ej: `App\Modules\Assessment\Actions\EvaluateSubmissionAction`.
-3. **Todo hecho significativo dispara un evento de dominio.**
-   Ej: `SubmissionEvaluated`, `GuideCompleted`, `ForumPostCreated`.
-   Los listeners de Tracking/Prediction/Communication reaccionan.
-4. **Todo evento de aprendizaje se registra en `learning_events`** vía listener.
-   Nunca escribir en esa tabla directamente.
-5. **Models delgados**: relaciones, casts, scopes, accessors. Nada más.
-6. **Policies para toda autorización.** Filament las respeta automáticamente si
-   están registradas. Nunca chequear roles con strings.
-7. **UUIDs públicos** en URLs para todo recurso de estudiantes. Filament usa
-   IDs en el admin (está protegido por auth); las rutas públicas/Livewire usan uuid.
-
-## Dominio: conceptos clave
-
-- **Proyecto ABP** (`projects`): unidad central de trabajo, 3 o 6 meses,
-  puede vincular varias materias (pivote `project_subject`).
-- **Fases/Hitos** (`phases`): etapas ordenadas. En Filament: nested resource.
-- **Guías** (`guides`): contenido pre-creado. El docente NO crea cursos.
-- **Recursos** (`resources`): archivos/enlaces complementarios del docente.
-- **Evidencias esperadas** (`expected_evidences`): qué debe entregar el estudiante.
-- **Entregas** (`submissions`): lo que sube el estudiante. En Filament Academic:
-  tabla con acción de evaluación rápida (estilo SpeedGrader).
-- **Evaluación cualitativa**: rúbricas de 4 niveles. Enum `RubricLevel`:
-  `not_achieved(1) | partially_achieved(2) | achieved(3) | exceeded(4)`.
-  El valor numérico JAMÁS se muestra. En Filament usar `TextColumn::badge()`
-  con colores: danger/warning/success/info. En Livewire usar el componente
-  `<x-rubric-badge />`.
-- **Barra de avance** (`student_progress.progress_pct`): 0-100%.
-  Fórmula: guías (50%) + foros (20%) + chats (10%) + calidad evaluaciones (20%).
-  Pesos en `config/tracking.php`.
-- **Alertas de riesgo** (`risk_alerts`): reglas heurísticas, con `reason` legible.
-- **Avatares**: 4 personajes fijos:
-  `rectora_isabel`, `docente_guia`, `mentor_nino`, `mentora_mujer`.
-  Mensajes scripted en `avatar_messages`, sin IA generativa en MVP.
-
-## Roles y permisos
-
-Modelo de **permisos granulares delegables** (ver docs/permissions-model.md y la skill
-`permissions-conventions`). NO es un sistema de 5 roles rígidos.
-
-- **Personal** (admin, rector, coordinador, secretario, teacher): permisos atómicos
-  marcables individualmente. Los roles-preset solo precargan casillas.
-- **Estudiantes y padres**: roles fijos uniformes (`student`, `parent`), sin configuración
-  por permiso. Acceso por middleware de ruta y scoping a `auth()->id()`.
-
-Reglas clave:
-- `users.create` y `users.grant` son permisos (no roles). Diego e Isa los tienen; pueden
-  concederlos a un coordinador/secretario futuro.
-- **Techo de delegación estricto**: nadie otorga un permiso que no tiene. Validar SIEMPRE
-  en el servidor (`AssignPermissionsAction`), nunca solo en la UI.
-- **Permisos con alcance**: `students.create.scoped` lleva scope en `user_grants`
-  (`all` o `groups`). El rector define el alcance al conceder. Un profesor solo matricula
-  si el rector le dio este permiso.
-- Fuente de verdad: `config/permissions.php`. No hardcodear nombres de permisos fuera de ahí.
-- No self-signup: cada cuenta la crea alguien con `users.create`.
-- Autorización siempre por Policy, respetada automáticamente por Filament.
-
-## Filament: convenciones específicas
-
-- Resources en `app/Filament/{Panel}/Resources/`.
-- Widgets en `app/Filament/{Panel}/Widgets/`.
-- Custom pages en `app/Filament/{Panel}/Pages/`.
-- Formularios con `TextInput::make()->label('Título')` — labels en español.
-- Tablas con columnas descriptivas, badges para estados, filtros útiles.
-- Widgets de dashboard: `StatsOverviewWidget` para KPIs,
-  `ChartWidget` (ApexCharts nativo de Filament) para gráficas.
-- Nested resources para proyecto → fases.
-- `SubmissionResource` con acción custom `EvaluateAction` que abre modal
-  con formulario de rúbrica (no página nueva).
-- Filament Notifications para alertas in-app a profesores y rectora.
-
-## Livewire: convenciones específicas
-
-- Componentes en `app/Livewire/{Student,Parent,Shared}/`.
-- Vistas en `resources/views/livewire/{student,parent,shared}/`.
-- Layout del estudiante: `resources/views/layouts/student.blade.php`.
-- Layout del padre: `resources/views/layouts/parent.blade.php`.
-- Rutas en `routes/web.php`, protegidas con middleware `auth` + `role:student`
-  o `role:parent`. No usar Filament para estas rutas.
-- Alpine.js para interactividad ligera (toggles, animaciones del avatar).
-- Gráficas con ApexCharts vía CDN o componente Blade que recibe datos por props.
-
-## MySQL: particularidades
-
-- `learning_events` particionada → SIN foreign keys, PK compuesta `(id, occurred_at)`.
-- Columnas JSON (no jsonb): usar casts `array` o `AsCollection` en modelos.
-- Timestamps en UTC en BD; conversión a `America/Bogota` solo en presentación.
-- Índices compuestos definidos explícitamente en migraciones.
-
-## Qué NO hacer
-
-- No agregar features fuera del MVP sin preguntar.
-- No crear calificaciones numéricas visibles. Este colegio no las usa.
-- No enviar datos de estudiantes a servicios externos.
-- No usar `env()` fuera de archivos config.
-- No poner lógica de negocio en Filament Resources ni en Livewire Components.
-- No crear una API REST (no hay frontend separado; cuando llegue la app móvil se agrega).
-- No usar Filament para las pantallas de estudiante o padre.
+## Skills disponibles (cargar según tarea)
+- `project-rules` — decisiones de arquitectura tomadas
+- `filament-conventions` — crear Resources, Widgets, Actions de Filament
+- `module-generator` — crear módulos de dominio o decidir Filament vs Livewire
+- `migration-conventions` — MySQL 9.1, índices, learning_events
+- `permissions-conventions` — sistema de permisos delegables
+- `livewire-components` — panel estudiante y padre
+- `abp-domain` — conceptos del dominio ABP de Liceo Innovarte
+- `rubric-evaluation` — evaluación cualitativa de 4 niveles
+- `testing-standards` — Pest, qué testear
+- `git-workflow` — flujo main/deploy para cPanel
 
 ## Comandos frecuentes
-
 ```bash
-php artisan migrate:fresh --seed
+php artisan migrate:fresh --seed    # reset completo
+php artisan db:seed --class=RolePermissionSeeder
 php artisan test
-php artisan filament:assets              # regenerar assets de Filament
+php artisan tinker
+php artisan queue:work --stop-when-empty
 php artisan metrics:recalculate
 php artisan risk:evaluate
 ```
