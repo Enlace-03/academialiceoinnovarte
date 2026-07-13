@@ -82,7 +82,7 @@ return [
     // ---------------------------------------------------------------------
     'presets' => [
 
-        'admin' => '*', // todos los permisos del catálogo
+        'super_admin' => '*', // todos los permisos del catálogo
 
         'rector' => [
             'users.view', 'users.create', 'users.update', 'users.grant',
@@ -98,7 +98,7 @@ return [
             'avatar-messages.manage',
         ],
 
-        'coordinador' => [
+        'coordinator' => [
             'users.view', 'users.create',
             'students.view',
             'groups.manage', 'subjects.view',
@@ -107,7 +107,7 @@ return [
             'dashboard.institutional.view', 'students-at-risk.view.all',
         ],
 
-        'secretario' => [
+        'secretary' => [
             'users.view', 'users.create',
             'students.create', 'students.view', 'students.update',
         ],
@@ -133,5 +133,7 @@ return [
         'parent' => [
             // Igual que student: acceso vía middleware (role:parent) y relación parent_student.
         ],
+        
     ],
+    'admin_panel_permission_prefixes' => ['users.', 'institution.'],
 ];

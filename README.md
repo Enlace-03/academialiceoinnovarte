@@ -1,58 +1,119 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# UserResource con techo de delegación — Academia Liceo Innovarte
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Estos archivos siguen la estructura estándar de recursos de **Filament 4**
+(carpeta por recurso, con `Schemas/` y `Tables/` separados de la clase
+principal). Cópialos dentro de tu proyecto Laravel respetando las rutas
+relativas — ya vienen en la posición correcta (`app/...`, `database/...`).
 
-## About Laravel
+## Cómo funciona el "techo de delegación"
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+La idea central: **nadie puede otorgar más autoridad de la que él mismo tiene.**
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+Se implementa con dos reglas independientes:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+1. **Techo para roles** — se agrega una columna `level` (entero) a la tabla
+   `roles` de Spatie Permission. Un usuario solo puede asignar roles cuyo
+   `level` sea **menor o igual** a su propio nivel máximo (`maxRoleLevel()`).
+   Esto es inclusivo a propósito: dos Coordinadores del mismo nivel sí pueden
+   crearse mutuamente, pero nadie puede crear a alguien por encima de sí mismo.
 
-## Learning Laravel
+2. **Techo para permisos individuales** — no necesitan un nivel numérico:
+   la regla es que **solo puedes delegar un permiso que tú mismo posees**
+   (directo o heredado de tus roles), vía `getAllPermissions()` de Spatie.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Un rol `Super Admin` (constante `HasDelegationCeiling::SUPER_ADMIN_ROLE`)
+bypasea el techo por completo y puede asignar cualquier rol o permiso.
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+La validación ocurre en **dos capas**:
+- En el formulario: las opciones visibles de roles/permisos ya vienen
+  filtradas (`modifyQueryUsing`), así el usuario ni siquiera ve lo que no
+  puede otorgar.
+- En el servidor: `WithinDelegationCeiling` vuelve a validar los IDs
+  enviados al guardar, por si el request se manipula directamente. Sin esta
+  segunda capa, el filtro de la UI sería solo cosmético.
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
+Adicionalmente, `canManageUser()` en el trait controla si un usuario puede
+**editar o eliminar** a otro (no solo asignarle roles): nadie puede tocar la
+cuenta de alguien con igual o mayor nivel que él, salvo Super Admin. Esto lo
+usa `UserPolicy`.
 
-## Agentic Development
+## Supuestos que debes ajustar
 
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
+- **Nombres de rol** en `RoleLevelSeeder`: usé `Super Admin`, `Rectora`,
+  `Coordinador Académico`, `Coordinador Administrativo`, `Docente`,
+  `Acudiente`, `Estudiante` como placeholders razonables para el contexto del
+  colegio. Cámbialos por los nombres reales que ya tengas en tu
+  `RoleSeeder`/`PermissionSeeder`.
+- **Nombres de permisos** en `UserPolicy`: asumí la convención
+  `users.view`, `users.create`, `users.update`, `users.delete`. Ajusta si usas
+  otra.
+- **Campos del modelo**: asumí que `users` tiene `is_active` y
+  `document_number`. Si no existen, quítalos del formulario o agrega las
+  columnas correspondientes.
+- Asumí que ya tienes un mecanismo tipo `Gate::before` para que Super Admin
+  bypasee las policies de Laravel en general (patrón típico con Spatie). Si
+  no lo tienes, agrégalo en `AppServiceProvider`:
 
-```bash
-composer require laravel/boost --dev
+  ```php
+  use Illuminate\Support\Facades\Gate;
 
-php artisan boost:install
-```
+  Gate::before(fn ($user, $ability) => $user->hasRole('Super Admin') ? true : null);
+  ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+## Pasos de integración
 
-## Contributing
+1. Copia los archivos a las rutas equivalentes en tu proyecto.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+2. Corre la migración:
+   ```bash
+   php artisan migrate
+   ```
 
-## Code of Conduct
+3. Ajusta los nombres de rol en `RoleLevelSeeder.php` y ejecútalo (o
+   intégralo a tu `DatabaseSeeder`):
+   ```bash
+   php artisan db:seed --class=RoleLevelSeeder
+   ```
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+4. En tu modelo `app/Models/User.php`, agrega el trait junto al `HasRoles`
+   de Spatie que ya debes tener:
+   ```php
+   use App\Models\Concerns\HasDelegationCeiling;
+   use Spatie\Permission\Traits\HasRoles;
 
-## Security Vulnerabilities
+   class User extends Authenticatable
+   {
+       use HasRoles;
+       use HasDelegationCeiling;
+       // ...
+   }
+   ```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+5. Registra el policy en `AppServiceProvider` (o donde registres policies),
+   si tu Laravel 13 no lo auto-descubre:
+   ```php
+   use App\Models\User;
+   use App\Policies\UserPolicy;
 
-## License
+   Gate::policy(User::class, UserPolicy::class);
+   ```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+6. Registra `UserResource` en tu panel `/admin` (si no usa auto-discovery de
+   recursos, agrégalo a `AdminPanelProvider`).
+
+7. **Bootstrapping**: como nadie tiene techo hasta que exista el primer
+   Super Admin, crea ese primer usuario por seeder o `tinker`, no desde la
+   UI:
+   ```php
+   $diego = User::factory()->create([...]);
+   $diego->assignRole('Super Admin');
+   ```
+
+## Nota sobre el panel `/academia`
+
+Este recurso vive en `/admin`, pensado para que Diego e Isa gestionen
+usuarios del sistema completo. Si más adelante Rafa (u otro coordinador)
+necesita gestionar solo Docentes/Estudiantes desde `/academia`, el mismo
+trait `HasDelegationCeiling` funciona ahí también — bastaría con crear un
+`UserResource` más acotado en ese panel (filtrando a roles con `level` bajo,
+por ejemplo) reutilizando exactamente la misma lógica de techo.

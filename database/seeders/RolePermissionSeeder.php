@@ -9,7 +9,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 // Crea todos los permisos del catálogo y los roles fijos (student, parent).
-// Los "presets" de personal (admin, rector, coordinador, secretario, teacher)
+// Los "presets" de personal (super_admin, rector, coordinator, secretary, teacher)
 // también se crean como roles de conveniencia que precargan permisos, pero
 // la autoridad real de cada usuario son sus permisos directos (marcables).
 final class RolePermissionSeeder extends Seeder
@@ -38,7 +38,7 @@ final class RolePermissionSeeder extends Seeder
             $role = Role::firstOrCreate(['name' => $roleName, 'guard_name' => 'web']);
 
             if ($permissionKeys === '*') {
-                $role->syncPermissions($allPermissionKeys); // admin: todo
+                $role->syncPermissions($allPermissionKeys); // super_admin: todo
             } else {
                 $role->syncPermissions($permissionKeys);
             }
