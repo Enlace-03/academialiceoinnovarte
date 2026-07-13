@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasDelegationCeiling;
+use App\Modules\Identity\Models\ParentStudent;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\SchoolGrade;
 use Database\Factories\UserFactory;
@@ -13,6 +14,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
@@ -45,6 +47,22 @@ class User extends Authenticatable implements FilamentUser
     public function schoolGrade(): ?SchoolGrade
     {
         return $this->group?->schoolGrade;
+    }
+
+    public function children(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'parent_student', 'parent_id', 'student_id')
+            ->using(ParentStudent::class)
+            ->withPivot(['relationship', 'is_primary_contact'])
+            ->withTimestamps();
+    }
+
+    public function guardians(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class, 'parent_student', 'student_id', 'parent_id')
+            ->using(ParentStudent::class)
+            ->withPivot(['relationship', 'is_primary_contact'])
+            ->withTimestamps();
     }
 
     /**

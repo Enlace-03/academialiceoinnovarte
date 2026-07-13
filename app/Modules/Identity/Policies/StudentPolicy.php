@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Identity\Policies;
 
-use App\Modules\Identity\Models\User;
+use App\Models\User;
 use App\Modules\Identity\Models\UserGrant;
 
 // Autorización de acciones sobre estudiantes.
@@ -39,7 +39,7 @@ final class StudentPolicy
      */
     public function create(User $user, ?int $targetGroupId = null): bool
     {
-        // Camino 1: permiso pleno (admin, rector, secretario).
+        // Camino 1: permiso pleno (admin, rector, secretary).
         if ($user->hasPermissionTo('students.create')) {
             return true;
         }
