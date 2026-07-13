@@ -2,6 +2,8 @@
 
 namespace App\Filament\Admin\Resources\Users\Tables;
 
+use App\Models\User;
+use App\Modules\Institution\Models\Group;
 use App\Support\PermissionLabels;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
@@ -16,6 +18,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->with('group.schoolGrade'))
             ->columns([
                 TextColumn::make('name')
                     ->label('Nombre')
@@ -32,6 +35,12 @@ class UsersTable
                     ->badge()
                     ->formatStateUsing(fn (string $state): string => PermissionLabels::role($state))
                     ->separator(','),
+
+                TextColumn::make('group.name')
+                    ->label('Grado / Grupo')
+                    ->getStateUsing(fn (User $record): string => $record->group
+                        ? "{$record->group->schoolGrade->name} - {$record->group->name}"
+                        : '—'),
 
                 IconColumn::make('is_active')
                     ->label('Activo')
@@ -66,6 +75,17 @@ class UsersTable
                     ->placeholder('Todos')
                     ->trueLabel('Activos')
                     ->falseLabel('Inactivos'),
+
+                SelectFilter::make('group_id')
+                    ->label('Grado / Grupo')
+                    ->options(fn () => Group::query()
+                        ->with('schoolGrade')
+                        ->get()
+                        ->sortBy(fn (Group $group) => [$group->schoolGrade->level, $group->name])
+                        ->mapWithKeys(fn (Group $group) => [
+                            $group->id => "{$group->schoolGrade->name} - {$group->name} ({$group->year})",
+                        ])
+                        ->all()),
             ])
             ->defaultSort('name');
     }

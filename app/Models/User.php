@@ -3,6 +3,8 @@
 namespace App\Models;
 
 use App\Models\Concerns\HasDelegationCeiling;
+use App\Modules\Institution\Models\Group;
+use App\Modules\Institution\Models\SchoolGrade;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -10,12 +12,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password'])]
+#[Fillable(['name', 'email', 'password', 'group_id'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -32,6 +35,16 @@ class User extends Authenticatable implements FilamentUser
     public function uniqueIds(): array
     {
         return ['uuid'];
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
+    }
+
+    public function schoolGrade(): ?SchoolGrade
+    {
+        return $this->group?->schoolGrade;
     }
 
     /**
