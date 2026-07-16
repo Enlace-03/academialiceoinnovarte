@@ -20,19 +20,23 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 ## 3. Columnas faltantes en `User::$fillable` (vía `#[Fillable(...)]`)
 
-**Estado:** deuda preexistente, no introducida por este trabajo, sin tocar.
+**Estado:** ✅ resuelto — `document_number` e `is_active` agregadas al atributo `#[Fillable(...)]` de `app/Models/User.php`.
 
-**Contexto:** `document_number` e `is_active` no están incluidas en el atributo `#[Fillable(...)]` de `app/Models/User.php` — mismo problema que tenía `group_id` antes de corregirse.
+## 4. `AssignPermissionsAction` y `CreateStaffUserAction` — código muerto/prototipo con imports rotos
 
-**Cuándo retomarlo:** cuando algún formulario/acción necesite escribir esas columnas por asignación masiva y falle silenciosamente por no estar en la lista.
+**Estado:** confirmado sin punto de entrada activo — no rompe nada en producción hoy.
 
-## 4. `StudentPolicy::create()` referencia un modelo inexistente (`UserGrant`)
+**Contexto:** ambas en `app/Modules/Identity/Actions/`. Ninguna está referenciada desde ningún Filament Resource, Livewire component ni ruta — el único rastro de uso es un ejemplo en docblock (`CreateStaffUserAction.php`, comentado, no invocación real). Las dos importan `App\Modules\Identity\Models\User`, namespace que no existe (el modelo real es `App\Models\User`). Además, `AssignPermissionsAction` depende de `App\Modules\Identity\Models\UserGrant`, que tampoco existe (ver punto 5). Es la misma causa raíz que tenía `StudentPolicy::create()`, ya simplificada.
 
-**Estado:** bug latente confirmado, sin punto de entrada activo hoy — no rompe nada en producción actualmente.
+**Cuándo retomarlo:** evaluar si se completan (corrigiendo el namespace y creando `UserGrant`) o se eliminan, cuando se diseñe el flujo real de creación de personal con permisos delegados por alcance.
 
-**Contexto:** `app/Modules/Identity/Policies/StudentPolicy.php`, método `create()`, importa `App\Modules\Identity\Models\UserGrant`, que no existe en ningún lugar del codebase. No está registrada en `Gate::policy()` (ese slot lo ocupa `UserPolicy::class` para `User::class`), y ningún Resource/Action/Page la invoca hoy — el único uso real es en el test `ParentStudentRelationTest.php` (invocación manual) y una mención en docblock de `CreateStaffUserAction.php` que es solo ejemplo, no llamada real.
+## 5. Migración `user_grants` huérfana (sin modelo Eloquent ni consumidor activo)
 
-**Cuándo retomarlo:** obligatorio resolver antes de conectar cualquier flujo real de "crear estudiante" que dependa de esta Policy — de lo contrario falla en cuanto se invoque.
+**Estado:** tabla migrada (`2027_01_01_000070_create_user_grants_table.php`), sin modelo ni uso real.
+
+**Contexto:** quedó huérfana tras simplificar `StudentPolicy::create()` (que era su único consumidor de lectura, vía un modelo `UserGrant` que nunca se creó). Pensada para permisos con alcance (ej. `students.create.scoped` limitado a ciertos grupos), complementando a Spatie.
+
+**Cuándo retomarlo:** decidir si se elimina la tabla o se retoma como mecanismo de delegación con alcance más adelante — evaluando primero si el techo de delegación existente (`HasDelegationCeiling`, permisos completos sin scope por grupo) ya cubre el caso de uso real antes de resucitar un segundo sistema paralelo.
 
 ## 5. Relation Manager espejo del lado acudiente ("Estudiantes a cargo")
 
@@ -49,6 +53,14 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 **Contexto:** hoy `User::group_id` es una FK simple (Opción A) — un estudiante tiene un grupo, sin historial. Si se necesita trazabilidad de "en qué grupo estuvo el estudiante X en el año Y" (boletines históricos, procesos de promoción automática de año), hay que migrar a una tabla de matrícula (`student_enrollments`: `student_id`, `group_id`, `school_year`, `status`), donde el grupo "actual" sea la fila activa.
 
 **Cuándo retomarlo:** cuando se construya el proceso formal de promoción/cierre de año lectivo.
+
+## 7. Consentimiento de tratamiento de datos: solo cubre el camino de la UI de Filament
+
+**Estado:** riesgo conocido, aceptado por ahora — no bloquea la Opción A (confirmación administrativa vía `GuardiansRelationManager`).
+
+**Contexto:** `RecordDataTreatmentConsentAction` (que crea el `ParentStudent` y el `DataTreatmentConsent` en la misma transacción) solo se invoca desde el Attach action de `GuardiansRelationManager`. Si en el futuro se crea un `parent_student` por otro camino (seeder, carga masiva por Excel/CSV, `tinker`), no queda consentimiento registrado — y nada a nivel de base de datos lo impide, porque `data_treatment_consents` no tiene una constraint que dependa de la existencia de una fila en `parent_student`. Es la limitación típica de "checkbox en formulario" vs. validación real de dominio.
+
+**Cuándo retomarlo:** obligatorio reforzar (ej. mover la validación a un observer/listener del propio `parent_student`, o exigir el consentimiento antes de cualquier inserción, no solo desde Filament) si se automatiza la carga masiva de estudiantes/acudientes.
 
 ---
 
