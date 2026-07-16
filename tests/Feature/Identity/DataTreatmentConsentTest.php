@@ -98,6 +98,56 @@ class DataTreatmentConsentTest extends TestCase
         $this->assertNotNull($consent->accepted_at);
     }
 
+    public function test_reattaching_the_same_pair_after_detach_reuses_the_existing_consent(): void
+    {
+        $parent = User::factory()->create()->assignRole('parent');
+        $student = User::factory()->create()->assignRole('student');
+
+        Livewire::test(GuardiansRelationManager::class, [
+            'ownerRecord' => $student,
+            'pageClass' => EditUser::class,
+        ])
+            ->mountTableAction('attach')
+            ->setTableActionData([
+                'recordId' => $parent->id,
+                'relationship' => 'padre',
+                'is_primary_contact' => true,
+                'data_treatment_consent' => true,
+            ])
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseCount('parent_student', 1);
+        $this->assertDatabaseCount('data_treatment_consents', 1);
+
+        Livewire::test(GuardiansRelationManager::class, [
+            'ownerRecord' => $student,
+            'pageClass' => EditUser::class,
+        ])
+            ->mountTableAction('detach', record: $parent->getKey())
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseCount('parent_student', 0);
+
+        Livewire::test(GuardiansRelationManager::class, [
+            'ownerRecord' => $student,
+            'pageClass' => EditUser::class,
+        ])
+            ->mountTableAction('attach')
+            ->setTableActionData([
+                'recordId' => $parent->id,
+                'relationship' => 'padre',
+                'is_primary_contact' => true,
+                'data_treatment_consent' => true,
+            ])
+            ->callMountedTableAction()
+            ->assertHasNoTableActionErrors();
+
+        $this->assertDatabaseCount('parent_student', 1);
+        $this->assertDatabaseCount('data_treatment_consents', 1);
+    }
+
     public function test_unique_constraint_prevents_duplicate_consent_for_same_pair_and_version(): void
     {
         $parent = User::factory()->create()->assignRole('parent');

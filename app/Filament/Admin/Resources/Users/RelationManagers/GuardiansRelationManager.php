@@ -65,6 +65,7 @@ class GuardiansRelationManager extends RelationManager
             ->headerActions([
                 AttachAction::make()
                     ->label('Adjuntar acudiente')
+                    ->modalHeading('Vincular acudiente')
                     ->preloadRecordSelect()
                     ->recordSelectOptionsQuery(
                         fn (Builder $query) => $query->whereHas(
@@ -86,10 +87,9 @@ class GuardiansRelationManager extends RelationManager
                                 'Confirmo que el acudiente autorizó el tratamiento de datos personales según la Política de Tratamiento de Datos vigente (versión %s).',
                                 config('legal.data_treatment_policy_version'),
                             ))
-                            ->required()
                             ->accepted()
                             ->validationMessages([
-                                'accepted' => 'Debes confirmar el consentimiento de tratamiento de datos personales para adjuntar al acudiente.',
+                                'accepted' => 'Debes confirmar la autorización de tratamiento de datos antes de vincular al acudiente.',
                             ]),
                         Section::make('Ver el texto completo de la política')
                             ->collapsible()

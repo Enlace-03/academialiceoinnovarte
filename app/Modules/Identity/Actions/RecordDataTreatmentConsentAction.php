@@ -30,10 +30,19 @@ final class RecordDataTreatmentConsentAction
         return DB::transaction(function () use ($guardiansRelationship, $guardian, $pivotData, $confirmedBy) {
             $guardiansRelationship->attach($guardian, $pivotData);
 
-            return DataTreatmentConsent::create([
+            // firstOrCreate, no create(): si el acudiente se desvincula y se
+            // vuelve a vincular con el mismo estudiante, ya existe un
+            // consentimiento vigente para esa misma policy_version — el
+            // unique(parent_id, student_id, policy_version) lo impediría con
+            // un create() directo. Se reutiliza el consentimiento existente
+            // en vez de duplicar o reventar la transacción completa (que
+            // también se llevaría por delante el parent_student recién
+            // creado en la línea anterior).
+            return DataTreatmentConsent::firstOrCreate([
                 'parent_id' => $guardian->getKey(),
                 'student_id' => $guardiansRelationship->getParent()->getKey(),
                 'policy_version' => config('legal.data_treatment_policy_version'),
+            ], [
                 'method' => 'admin_confirmed',
                 'confirmed_by_user_id' => $confirmedBy->getKey(),
                 'accepted_at' => now(),
