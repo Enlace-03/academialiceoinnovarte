@@ -15,12 +15,14 @@ class SchoolGradeFactory extends Factory
 
     public function definition(): array
     {
-        $level = fake()->unique()->numberBetween(1, 9);
+        $level = fake()->unique()->numberBetween(0, 9);
 
         return [
             'institution_id' => Institution::factory(),
+            'cycle_id' => null,
             'name' => "{$level}°",
             'level' => $level,
+            'is_active' => true,
         ];
     }
 }

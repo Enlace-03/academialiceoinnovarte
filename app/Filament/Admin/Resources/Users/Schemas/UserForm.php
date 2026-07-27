@@ -97,10 +97,20 @@ class UserForm
                         ->live()
                         ->dehydrated(false)
                         ->visible(fn (Get $get) => in_array($studentRoleId, $get('roles') ?? []))
-                        ->options(fn () => SchoolGrade::query()
-                            ->where('institution_id', Institution::query()->value('id'))
-                            ->orderBy('level')
-                            ->pluck('name', 'id'))
+                        ->options(function (?User $record) {
+                            $currentGradeId = $record?->group?->school_grade_id;
+
+                            return SchoolGrade::query()
+                                ->where('institution_id', Institution::query()->value('id'))
+                                ->where(fn ($query) => $query
+                                    ->where('is_active', true)
+                                    ->when(
+                                        $currentGradeId,
+                                        fn ($q, $id) => $q->orWhere('id', $id)
+                                    ))
+                                ->orderBy('level')
+                                ->pluck('name', 'id');
+                        })
                         ->afterStateHydrated(function (Select $component, ?User $record) {
                             $component->state($record?->group?->school_grade_id);
                         }),

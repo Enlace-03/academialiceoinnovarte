@@ -34,12 +34,14 @@ return [
         ],
 
         'Institución' => [
-            'institution.manage'         => 'Configuración general de la institución y año lectivo',
-            'school-grades.manage'       => 'Crear y editar grados escolares',
-            'groups.manage'              => 'Crear y editar grupos',
-            'subjects.manage'            => 'Crear y editar materias',
-            'subjects.view'              => 'Ver listado de materias',
-            'teacher-assignments.manage' => 'Asignar profesores a materias y grupos',
+            'institution.manage'                => 'Configuración general de la institución y año lectivo',
+            'institution.cycles.manage'          => 'Crear y editar ciclos de desarrollo del pensamiento',
+            'institution.thinking-fields.manage' => 'Crear y editar campos de pensamiento',
+            'institution.school-grades.manage'   => 'Crear y editar grados escolares',
+            'institution.groups.manage'          => 'Crear y editar grupos',
+            'subjects.manage'                    => 'Crear y editar materias',
+            'subjects.view'                      => 'Ver listado de materias',
+            'teacher-assignments.manage'         => 'Asignar profesores a materias y grupos',
         ],
 
         'Proyectos ABP' => [
@@ -88,7 +90,9 @@ return [
             'users.view', 'users.create', 'users.update', 'users.grant',
             'students.create', 'students.view', 'students.update',
             'institution.manage',
-            'school-grades.manage', 'groups.manage', 'subjects.manage', 'subjects.view',
+            'institution.cycles.manage', 'institution.thinking-fields.manage',
+            'institution.school-grades.manage', 'institution.groups.manage',
+            'subjects.manage', 'subjects.view',
             'teacher-assignments.manage',
             'projects.view.all', 'projects.create', 'projects.update.all',
             'phases.manage', 'resources.manage',
@@ -101,7 +105,7 @@ return [
         'coordinator' => [
             'users.view', 'users.create',
             'students.view',
-            'groups.manage', 'subjects.view',
+            'institution.groups.manage', 'subjects.view',
             'projects.view.all',
             'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all',

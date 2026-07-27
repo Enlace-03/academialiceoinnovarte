@@ -26,4 +26,14 @@ class Institution extends Model
     {
         return $this->hasMany(SchoolGrade::class);
     }
+
+    public function cycles(): HasMany
+    {
+        return $this->hasMany(Cycle::class);
+    }
+
+    public function thinkingFields(): HasMany
+    {
+        return $this->hasMany(ThinkingField::class);
+    }
 }

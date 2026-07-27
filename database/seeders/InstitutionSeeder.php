@@ -31,43 +31,120 @@ class InstitutionSeeder extends Seeder
         }
 
         // ------------------------------------------------------------------
-        // 2. Grados escolares (1–9)
+        // 2. Ciclos de desarrollo del pensamiento (1–4)
         // ------------------------------------------------------------------
-        $grades = [
-            1 => '1° de Primaria',
-            2 => '2° de Primaria',
-            3 => '3° de Primaria',
-            4 => '4° de Primaria',
-            5 => '5° de Primaria',
-            6 => '6°',
-            7 => '7°',
-            8 => '8°',
-            9 => '9°',
+        // Nombres y descripciones: placeholders pendientes de confirmación
+        // institucional (roadmap Hito 1A). Fáciles de renombrar aquí, nunca
+        // hardcodeados en lógica de negocio.
+        $cycles = [
+            1 => ['name' => 'Exploratorio', 'description' => 'Desarrollo de la curiosidad, la exploración sensorial y el reconocimiento del entorno inmediato.'],
+            2 => ['name' => 'Conceptual', 'description' => 'Construcción de conceptos y relaciones a partir de la exploración estructurada.'],
+            3 => ['name' => 'Contextual', 'description' => 'Aplicación de conceptos en contextos reales, con mayor autonomía frente al proyecto.'],
+            4 => ['name' => 'Proyectivo', 'description' => 'Diseño y ejecución de proyectos propios, con proyección a la vida y al entorno social.'],
         ];
 
-        $gradeIds = [];
+        $cycleIds = [];
 
-        foreach ($grades as $level => $name) {
-            $grade = DB::table('school_grades')
+        foreach ($cycles as $order => $cycle) {
+            $existing = DB::table('cycles')
                 ->where('institution_id', $institutionId)
-                ->where('level', $level)
+                ->where('order', $order)
                 ->first();
 
-            if (! $grade) {
-                $gradeIds[$level] = DB::table('school_grades')->insertGetId([
+            if (! $existing) {
+                $cycleIds[$order] = DB::table('cycles')->insertGetId([
                     'institution_id' => $institutionId,
-                    'name'           => $name,
-                    'level'          => $level,
+                    'name'           => $cycle['name'],
+                    'order'          => $order,
+                    'description'    => $cycle['description'],
                     'created_at'     => now(),
                     'updated_at'     => now(),
                 ]);
             } else {
-                $gradeIds[$level] = $grade->id;
+                $cycleIds[$order] = $existing->id;
             }
         }
 
         // ------------------------------------------------------------------
-        // 3. Grupos A y B por grado, año lectivo 2027
+        // 3. Campos de pensamiento (1–4)
+        // ------------------------------------------------------------------
+        // Nombres: placeholders pendientes de confirmación institucional,
+        // los 4 nombres que pidió el roadmap del Hito 1A.
+        $thinkingFields = [
+            1 => ['name' => 'Lenguaje y Comunicación', 'purpose' => 'Desarrollar la comprensión y expresión oral, escrita y simbólica.'],
+            2 => ['name' => 'Pensamiento Matemático', 'purpose' => 'Desarrollar el razonamiento lógico-matemático y la resolución de problemas.'],
+            3 => ['name' => 'Exploración y Comprensión del Mundo Natural y Social', 'purpose' => 'Desarrollar la comprensión del entorno natural, social y cultural.'],
+            4 => ['name' => 'Desarrollo Personal y Social', 'purpose' => 'Desarrollar la identidad, la autonomía y la convivencia.'],
+        ];
+
+        foreach ($thinkingFields as $order => $field) {
+            $exists = DB::table('thinking_fields')
+                ->where('institution_id', $institutionId)
+                ->where('order', $order)
+                ->exists();
+
+            if (! $exists) {
+                DB::table('thinking_fields')->insert([
+                    'institution_id' => $institutionId,
+                    'name'           => $field['name'],
+                    'slug'           => Str::slug($field['name']),
+                    'purpose'        => $field['purpose'],
+                    'order'          => $order,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]);
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // 4. Grados escolares (0–9), cada uno asignado a su ciclo
+        // ------------------------------------------------------------------
+        $grades = [
+            0 => ['name' => 'Transición', 'cycle' => 1],
+            1 => ['name' => '1° de Primaria', 'cycle' => 1],
+            2 => ['name' => '2° de Primaria', 'cycle' => 1],
+            3 => ['name' => '3° de Primaria', 'cycle' => 2],
+            4 => ['name' => '4° de Primaria', 'cycle' => 2],
+            5 => ['name' => '5° de Primaria', 'cycle' => 2],
+            6 => ['name' => '6°', 'cycle' => 3],
+            7 => ['name' => '7°', 'cycle' => 3],
+            8 => ['name' => '8°', 'cycle' => 4],
+            9 => ['name' => '9°', 'cycle' => 4],
+        ];
+
+        $gradeIds = [];
+
+        foreach ($grades as $level => $grade) {
+            $cycleId = $cycleIds[$grade['cycle']];
+
+            $existing = DB::table('school_grades')
+                ->where('institution_id', $institutionId)
+                ->where('level', $level)
+                ->first();
+
+            if (! $existing) {
+                $gradeIds[$level] = DB::table('school_grades')->insertGetId([
+                    'institution_id' => $institutionId,
+                    'cycle_id'       => $cycleId,
+                    'name'           => $grade['name'],
+                    'level'          => $level,
+                    'is_active'      => true,
+                    'created_at'     => now(),
+                    'updated_at'     => now(),
+                ]);
+            } else {
+                $gradeIds[$level] = $existing->id;
+
+                if ($existing->cycle_id === null) {
+                    DB::table('school_grades')
+                        ->where('id', $existing->id)
+                        ->update(['cycle_id' => $cycleId, 'updated_at' => now()]);
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // 5. Grupos A y B por grado, año lectivo 2027
         // ------------------------------------------------------------------
         foreach ($gradeIds as $level => $gradeId) {
             foreach (['A', 'B'] as $groupName) {
@@ -91,7 +168,7 @@ class InstitutionSeeder extends Seeder
         }
 
         // ------------------------------------------------------------------
-        // 4. Materias
+        // 6. Materias
         // ------------------------------------------------------------------
         $subjects = [
             // Tradicionales
