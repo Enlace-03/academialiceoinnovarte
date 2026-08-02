@@ -2,6 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Groups\Schemas;
 
+use App\Modules\Institution\Models\InstitutionSetting;
 use App\Modules\Institution\Models\SchoolGrade;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -29,7 +30,10 @@ class GroupForm
             TextInput::make('year')
                 ->label('Año lectivo')
                 ->numeric()
-                ->default(fn () => config('school.current_academic_year'))
+                ->default(fn () => InstitutionSetting::get(
+                    'current_academic_year',
+                    config('school.current_academic_year'),
+                ))
                 ->required(),
         ]);
     }

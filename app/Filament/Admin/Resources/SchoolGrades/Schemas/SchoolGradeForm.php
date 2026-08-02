@@ -8,7 +8,9 @@ use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
+use Illuminate\Validation\Rules\Unique;
 
 class SchoolGradeForm
 {
@@ -28,7 +30,14 @@ class SchoolGradeForm
                 ->numeric()
                 ->minValue(0)
                 ->maxValue(9)
-                ->required(),
+                ->required()
+                ->unique(
+                    modifyRuleUsing: fn (Unique $rule, Get $get) => $rule->where('institution_id', $get('institution_id')),
+                    ignoreRecord: true,
+                )
+                ->validationMessages([
+                    'unique' => 'Ya existe un grado con este nivel.',
+                ]),
 
             Select::make('cycle_id')
                 ->label('Ciclo')

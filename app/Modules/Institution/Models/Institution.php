@@ -36,4 +36,9 @@ class Institution extends Model
     {
         return $this->hasMany(ThinkingField::class);
     }
+
+    public function settings(): HasMany
+    {
+        return $this->hasMany(InstitutionSetting::class);
+    }
 }

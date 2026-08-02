@@ -145,6 +145,25 @@ class InstitutionResourcesCrudTest extends TestCase
         $this->assertDatabaseHas('school_grades', ['name' => '3°', 'level' => 3, 'cycle_id' => $cycle->id]);
     }
 
+    public function test_creating_a_school_grade_with_a_duplicate_level_shows_a_validation_error_not_a_500(): void
+    {
+        $cycle = Cycle::factory()->for($this->institution)->create();
+        SchoolGrade::factory()->for($this->institution)->create(['level' => 3]);
+
+        Livewire::test(CreateSchoolGrade::class)
+            ->fillForm([
+                'name' => '3° (duplicado)',
+                'level' => 3,
+                'cycle_id' => $cycle->id,
+                'is_active' => true,
+            ])
+            ->call('create')
+            ->assertHasFormErrors(['level' => 'unique'])
+            ->assertSee('Ya existe un grado con este nivel.');
+
+        $this->assertDatabaseCount('school_grades', 1);
+    }
+
     public function test_school_grade_can_be_edited_and_toggled_inactive(): void
     {
         $cycle = Cycle::factory()->for($this->institution)->create();

@@ -5,6 +5,7 @@ namespace App\Filament\Admin\Resources\Users\Schemas;
 use App\Models\User;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\Institution;
+use App\Modules\Institution\Models\InstitutionSetting;
 use App\Modules\Institution\Models\SchoolGrade;
 use App\Support\PermissionLabels;
 use App\Rules\GroupRequiresStudentRole;
@@ -130,7 +131,10 @@ class UserForm
                             return Group::query()
                                 ->where('school_grade_id', $schoolGradeId)
                                 ->where(fn ($query) => $query
-                                    ->where('year', config('school.current_academic_year'))
+                                    ->where('year', InstitutionSetting::get(
+                                        'current_academic_year',
+                                        config('school.current_academic_year'),
+                                    ))
                                     ->when(
                                         $record?->group_id,
                                         fn ($q, $groupId) => $q->orWhere('id', $groupId)

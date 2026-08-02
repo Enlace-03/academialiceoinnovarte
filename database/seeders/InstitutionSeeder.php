@@ -210,5 +210,26 @@ class InstitutionSeeder extends Seeder
                 ]);
             }
         }
+
+        // ------------------------------------------------------------------
+        // 7. Año lectivo vigente
+        // ------------------------------------------------------------------
+        // Fuente de verdad real (no config/school.php): hoy solo hay grupos
+        // sembrados para 2027, así que ese es el año lectivo vigente. Editable
+        // luego desde /admin en "Configuración institucional".
+        $existingSetting = DB::table('institution_settings')
+            ->where('institution_id', $institutionId)
+            ->where('key', 'current_academic_year')
+            ->exists();
+
+        if (! $existingSetting) {
+            DB::table('institution_settings')->insert([
+                'institution_id' => $institutionId,
+                'key'            => 'current_academic_year',
+                'value'          => '2027',
+                'created_at'     => now(),
+                'updated_at'     => now(),
+            ]);
+        }
     }
 }

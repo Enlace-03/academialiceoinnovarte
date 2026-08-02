@@ -35,6 +35,7 @@ return [
 
         'Institución' => [
             'institution.manage'                => 'Configuración general de la institución y año lectivo',
+            'institution.settings.manage'        => 'Editar configuración institucional (año lectivo vigente y otros parámetros)',
             'institution.cycles.manage'          => 'Crear y editar ciclos de desarrollo del pensamiento',
             'institution.thinking-fields.manage' => 'Crear y editar campos de pensamiento',
             'institution.school-grades.manage'   => 'Crear y editar grados escolares',
@@ -90,6 +91,7 @@ return [
             'users.view', 'users.create', 'users.update', 'users.grant',
             'students.create', 'students.view', 'students.update',
             'institution.manage',
+            'institution.settings.manage',
             'institution.cycles.manage', 'institution.thinking-fields.manage',
             'institution.school-grades.manage', 'institution.groups.manage',
             'subjects.manage', 'subjects.view',
