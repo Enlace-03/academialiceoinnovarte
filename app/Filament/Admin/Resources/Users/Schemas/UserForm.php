@@ -20,6 +20,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -81,6 +82,20 @@ class UserForm
                             ),
                         )
                         ->getOptionLabelFromRecordUsing(fn ($record) => PermissionLabels::role($record->name))
+                        // Por defecto, Select::relationship() busca sobre la columna
+                        // cruda 'name' de Spatie ('teacher'), no sobre la etiqueta en
+                        // español que ve el usuario ('Docente'). Se sobrescribe para
+                        // buscar sobre ambas.
+                        ->getSearchResultsUsing(fn (string $search): array => Role::query()
+                            ->when(
+                                ! $actingUser->isSuperAdmin(),
+                                fn ($q) => $q->whereIn('id', $actingUser->assignableRoles()->pluck('id'))
+                            )
+                            ->get()
+                            ->filter(fn (Role $role): bool => str_contains(Str::lower($role->name), Str::lower($search))
+                                || str_contains(Str::lower(PermissionLabels::role($role->name)), Str::lower($search)))
+                            ->mapWithKeys(fn (Role $role) => [$role->id => PermissionLabels::role($role->name)])
+                            ->all())
                         ->multiple()
                         ->preload()
                         ->live()
