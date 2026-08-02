@@ -8,6 +8,7 @@ use App\Modules\Institution\Models\Institution;
 use App\Modules\Institution\Models\InstitutionSetting;
 use App\Modules\Institution\Models\SchoolGrade;
 use App\Support\PermissionLabels;
+use App\Rules\ExclusiveIdentityRoleRule;
 use App\Rules\GroupRequiresStudentRole;
 use App\Rules\WithinDelegationCeiling;
 use Filament\Forms\Components\CheckboxList;
@@ -86,6 +87,12 @@ class UserForm
                         ->label('Roles')
                         ->rule(fn () => new WithinDelegationCeiling(
                             $actingUser->assignableRoles()->pluck('id')->all()
+                        ))
+                        ->rule(fn () => new ExclusiveIdentityRoleRule(
+                            Role::whereIn('name', array_keys(array_filter(
+                                config('permissions.role_categories', []),
+                                fn (string $category) => $category === 'identity',
+                            )))->pluck('id')->all()
                         )),
                 ]),
 

@@ -129,6 +129,22 @@ return [
     ],
 
     // ---------------------------------------------------------------------
+    // Categoría de cada rol: determina la regla de exclusividad de roles de
+    // identidad (ver App\Rules\ExclusiveIdentityRoleRule). Los roles "staff"
+    // se pueden combinar libremente entre sí; los "identity" no se pueden
+    // combinar con ningún otro rol (ni staff ni entre sí).
+    // ---------------------------------------------------------------------
+    'role_categories' => [
+        'super_admin' => 'staff',
+        'rector' => 'staff',
+        'coordinator' => 'staff',
+        'secretary' => 'staff',
+        'teacher' => 'staff',
+        'student' => 'identity',
+        'parent' => 'identity',
+    ],
+
+    // ---------------------------------------------------------------------
     // Roles fijos uniformes (no se configuran por permiso).
     // ---------------------------------------------------------------------
     'fixed_roles' => [
