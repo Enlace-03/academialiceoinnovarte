@@ -4,6 +4,9 @@ namespace Tests\Feature\Identity;
 
 use App\Filament\Admin\Resources\Users\Pages\ListUsers;
 use App\Models\User;
+use App\Modules\Institution\Models\Group;
+use App\Modules\Institution\Models\Institution;
+use App\Modules\Institution\Models\SchoolGrade;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,5 +75,77 @@ class UsersTableTabsTest extends TestCase
         $this->assertSame('2', $tabs['staff']->getBadge());
         $this->assertSame('1', $tabs['students']->getBadge());
         $this->assertSame('1', $tabs['guardians']->getBadge());
+    }
+
+    public function test_grado_grupo_column_is_hidden_outside_the_estudiantes_tab(): void
+    {
+        Livewire::test(ListUsers::class)
+            ->assertTableColumnHidden('group.name');
+
+        Livewire::test(ListUsers::class)
+            ->set('activeTab', 'guardians')
+            ->assertTableColumnHidden('group.name');
+    }
+
+    public function test_grado_grupo_column_is_visible_with_correct_value_on_estudiantes_tab(): void
+    {
+        $institution = Institution::factory()->create();
+        $schoolGrade = SchoolGrade::factory()->for($institution)->create(['name' => '5° de Primaria']);
+        $group = Group::factory()->for($schoolGrade)->create(['name' => 'A']);
+
+        $this->student->update(['group_id' => $group->id]);
+
+        Livewire::test(ListUsers::class)
+            ->set('activeTab', 'students')
+            ->assertTableColumnVisible('group.name')
+            ->assertTableColumnStateSet('group.name', '5° de Primaria - A', $this->student);
+    }
+
+    public function test_children_column_is_hidden_outside_the_acudientes_tab(): void
+    {
+        Livewire::test(ListUsers::class)
+            ->assertTableColumnHidden('children.name');
+
+        Livewire::test(ListUsers::class)
+            ->set('activeTab', 'students')
+            ->assertTableColumnHidden('children.name');
+    }
+
+    public function test_children_column_shows_the_linked_student_on_acudientes_tab(): void
+    {
+        $this->guardian->children()->attach($this->student->id, [
+            'relationship' => 'madre',
+            'is_primary_contact' => true,
+        ]);
+
+        Livewire::test(ListUsers::class)
+            ->set('activeTab', 'guardians')
+            ->assertTableColumnVisible('children.name')
+            ->assertTableColumnStateSet('children.name', [$this->student->name], $this->guardian);
+    }
+
+    public function test_children_column_supports_a_guardian_linked_to_multiple_students(): void
+    {
+        $secondStudent = User::factory()->create()->assignRole('student');
+
+        $this->guardian->children()->attach([
+            $this->student->id => ['relationship' => 'madre', 'is_primary_contact' => true],
+            $secondStudent->id => ['relationship' => 'madre', 'is_primary_contact' => false],
+        ]);
+
+        $response = Livewire::test(ListUsers::class)->set('activeTab', 'guardians');
+
+        $column = $response->instance()->getTable()->getColumn('children.name');
+        $record = $response->instance()->getTableRecord((string) $this->guardian->getKey());
+        $column->record($record);
+        $column->clearCachedState();
+
+        $state = $column->getState();
+        sort($state);
+
+        $expectedNames = [$this->student->name, $secondStudent->name];
+        sort($expectedNames);
+
+        $this->assertSame($expectedNames, $state);
     }
 }

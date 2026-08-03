@@ -7,6 +7,7 @@ use App\Modules\Institution\Models\Group;
 use App\Support\PermissionLabels;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
@@ -18,7 +19,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with('group.schoolGrade'))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['group.schoolGrade', 'children']))
             ->columns([
                 TextColumn::make('name')
                     ->label('Nombre')
@@ -40,7 +41,19 @@ class UsersTable
                     ->label('Grado / Grupo')
                     ->getStateUsing(fn (User $record): string => $record->group
                         ? "{$record->group->schoolGrade->name} - {$record->group->name}"
-                        : '—'),
+                        : '—')
+                    // Solo aplica a estudiantes: se oculta en las pestañas
+                    // Personal y Acudientes (ver ListUsers::getTabs()).
+                    ->visible(fn (HasTable $livewire): bool => ($livewire->activeTab ?? null) === 'students'),
+
+                TextColumn::make('children.name')
+                    ->label('Estudiante(s) vinculado(s)')
+                    ->badge()
+                    ->separator(',')
+                    ->placeholder('—')
+                    // Solo tiene sentido para acudientes; un acudiente puede
+                    // tener más de un estudiante a cargo (sin restricción dura).
+                    ->visible(fn (HasTable $livewire): bool => ($livewire->activeTab ?? null) === 'guardians'),
 
                 IconColumn::make('is_active')
                     ->label('Activo')
