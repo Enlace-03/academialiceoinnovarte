@@ -9,7 +9,7 @@ NO es un LMS tradicional — el concepto central es **Proyecto ABP**, no curso/l
 - Filament 4 (paneles admin y académico)
 - Livewire 3 + Alpine.js (paneles estudiante y padre)
 - Tailwind CSS
-- MySQL 9.1 (WampServer local, cPanel producción)
+- MySQL 9.1 (WampServer local) | **MariaDB 10.11.18** (cPanel producción — verificado 2026-08-07, ver sección "Producción real")
 - Colas: database | Cache: database | Sin Redis, sin SSH
 
 ## Paneles
@@ -73,6 +73,32 @@ de urgencia, y sin excepción "solo quiero verificar algo rápido". Verificar do
 `--env=` y `DB_DATABASE` antes de proponer el comando: el `.env` por defecto apunta a
 la base de **desarrollo**, no a testing — un `migrate:fresh --force` sin `--env=testing`
 borra datos reales de dev. (Incidente: 2026-08-07, hito 1C — se restauró vía seeders.)
+
+## Producción real (cPanel) — verificado antes del Hito de Tracking
+
+Verificación hecha en vivo contra el cPanel y la base de datos reales de producción
+(`cpanel.liceoinnovarte.edu.co`) el 2026-08-07, antes de que `learning_events` y las
+colas de trabajo se vuelvan necesarias. Todo lo de abajo es un hecho confirmado, no
+una suposición — cualquier cambio de plan de hosting debe re-verificarse.
+
+| # | Punto | Estado | Detalle |
+|---|---|---|---|
+| 1 | Colas (cron) | ✅ confirmado | `Cron Jobs` disponible en cPanel (Avanzada), formulario estándar minuto/hora/día/mes/día-semana, sin límite visible. Actualmente sin ningún cron configurado. Comando de ejemplo del propio cPanel: `/usr/local/bin/ea-php83 /home/liceoinnovarteed/academia.liceoinnovarte.edu.co/artisan queue:work --stop-when-empty` cada minuto (`* * * * *`). |
+| 2 | Tabla particionada (`learning_events`) | ✅ confirmado | Probado en vivo: se creó una BD temporal (`liceoinnovarteed_parttest`, borrada al terminar), y dentro una tabla con `PARTITION BY RANGE (UNIX_TIMESTAMP(...))` con 3 particiones — funcionó sin error de privilegios. También se probó `ALTER TABLE ... REORGANIZE PARTITION pmax INTO (...)` (lo que necesita el comando `events:archive`) — funcionó igual. El motor real es **MariaDB 10.11.18**, no MySQL — sintaxis de particionado compatible, pero cualquier función específica de MySQL debe verificarse contra MariaDB antes de usarse. |
+| 3 | Compilación de assets | ✅ ya resuelto, sin ajuste necesario | El skill `git-workflow` ya documentaba correctamente que `npm run build` y `composer install --no-dev` corren **en local**, y los artefactos compilados (`vendor/`, `public/build/`, `public/css|js/filament`) se comitean a la rama `deploy` con `git add -f`. cPanel solo hace `Git Version Control → Update from Remote`. No compila nada — no hay riesgo de que falte Node.js en el servidor. |
+| 4 | Versión de PHP / Composer | ✅ confirmado | `MultiPHP Manager`: versión activa **PHP 8.3 (ea-php83)** en ambos dominios (`academia.liceoinnovarte.edu.co` y `liceoinnovarte.edu.co`, ambos en "Inherited"). Versiones disponibles hasta PHP 8.5. Cumple `"php": "^8.3"` de `composer.json`. `composer install` corre en local (mismo hallazgo que el punto 3) — el límite de memoria del plan no es un riesgo porque Composer nunca corre en el servidor. |
+| 5 | Almacenamiento en disco | ✅ confirmado | Cuota total del plan: **2.44 GB** (18.58 MB usados hoy, 0.74%). Cuota de bases de datos separada: **2.42 GB** (0 bytes usados — **todavía no existe ninguna base de datos de la app en producción**, el deploy real está pendiente). Ancho de banda: 48.83 GB/mes (0.08% usado). Límite de bases de datos del plan: **2 en total**. |
+
+**Hallazgo adicional (no solicitado, relevante para revisar después):** la sección
+"SSH Access" de cPanel muestra una interfaz completa de gestión de llaves SSH
+(generar/importar/administrar), lo que sugiere que el SSH real podría estar
+disponible en este plan — no se probó una conexión real. Si se confirma, cambia
+las opciones del flujo de deploy (Opción A de "Manejo de migraciones sin SSH" en
+el skill `git-workflow` podría dejar de ser condicional).
+
+**Nota:** no hay ninguna base de datos de la aplicación en producción todavía —
+el primer deploy real sigue pendiente. El número de bases de datos del plan (2)
+es ajustado: la base de datos de la app consume una, dejando una sola de margen.
 
 ## Comandos frecuentes
 ```bash
