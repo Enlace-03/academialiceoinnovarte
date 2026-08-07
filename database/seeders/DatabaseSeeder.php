@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
         $this->call(RolePermissionSeeder::class);
         $this->call(RoleLevelSeeder::class);
         $this->call(InstitutionSeeder::class);
+        $this->call(RubricLevelSeeder::class);
 
         $diego = User::firstOrCreate(
             ['email' => 'diego@admin.edu.co'],

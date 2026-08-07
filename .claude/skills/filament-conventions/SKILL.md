@@ -65,25 +65,26 @@ Select::make('status')->label('Estado')
 
 ## Rúbricas: cómo mostrar los 4 niveles
 
+Los niveles viven en la tabla catálogo `rubric_levels` (global, sin `institution_id`),
+no como ENUM de base de datos — así se puede agregar un quinto nivel sin migración.
+Escala vigente (Hito 2, confirmada): **Inicio → En proceso → Logro esperado → Logro
+destacado**. Ningún otro set de etiquetas anterior sigue vigente.
+
 ```php
-// En tablas
-TextColumn::make('level')
+// En tablas: rubric_level_id es la FK real; el label/color vienen del catálogo.
+TextColumn::make('rubricLevel.label')
     ->label('Nivel')
     ->badge()
-    ->formatStateUsing(fn (string $state) => match ($state) {
-        'not_achieved' => 'No alcanzó',
-        'partially_achieved' => 'Alcanzó medianamente',
-        'achieved' => 'Alcanzó',
-        'exceeded' => 'Superó',
-    })
-    ->color(fn (string $state) => match ($state) {
-        'not_achieved' => 'danger',
-        'partially_achieved' => 'warning',
-        'achieved' => 'success',
-        'exceeded' => 'info',
-    }),
+    ->color(fn (RubricLevel $state) => $state->color), // color hex ya viene del catálogo
 
-// NUNCA mostrar el valor numérico (1-4) en ninguna columna ni formulario.
+// Catálogo sembrado por RubricLevelSeeder:
+// key                => label               | color   | order
+// 'inicio'           => 'Inicio'             | rojo    | 1
+// 'en_proceso'       => 'En proceso'         | naranja | 2
+// 'logro_esperado'   => 'Logro esperado'     | amarillo| 3
+// 'logro_destacado'  => 'Logro destacado'    | verde   | 4
+
+// NUNCA mostrar el valor numérico (order) en ninguna columna ni formulario.
 ```
 
 ## Alertas de riesgo: widget estilo triage

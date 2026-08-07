@@ -1,118 +1,70 @@
 ---
 name: rubric-evaluation
-description: Cargar esta skill cuando se trabaje con evaluaciones, rúbricas, niveles de desempeño, o cualquier pantalla que muestre resultados de evaluación. Cubre el enum, el flujo de evaluación y la presentación visual.
+description: Cargar esta skill cuando se trabaje con evaluaciones, rúbricas, niveles de desempeño, o cualquier pantalla que muestre resultados de evaluación. Cubre el catálogo de niveles, el flujo de evaluación y la presentación visual.
 ---
 
 # Evaluación cualitativa — Liceo Innovarte
 
-## El enum RubricLevel
+## Los niveles viven en una tabla catálogo, no en un enum
 
-```php
-// app/Modules/Shared/Enums/RubricLevel.php
-namespace App\Modules\Shared\Enums;
+Decisión del Hito 2: `rubric_levels` es una tabla catálogo global (sin `institution_id`),
+sembrada por `RubricLevelSeeder`, no un ENUM de base de datos ni un enum PHP — así se
+puede agregar un quinto nivel editando datos, sin migración.
 
-enum RubricLevel: string
-{
-    case NotAchieved       = 'not_achieved';
-    case PartiallyAchieved = 'partially_achieved';
-    case Achieved          = 'achieved';
-    case Exceeded          = 'exceeded';
+Escala vigente (única, las anteriores quedaron descartadas):
 
-    public function label(): string
-    {
-        return match($this) {
-            self::NotAchieved       => 'No alcanzó',
-            self::PartiallyAchieved => 'Alcanzó medianamente',
-            self::Achieved          => 'Alcanzó',
-            self::Exceeded          => 'Superó',
-        };
-    }
+| key | label | color | order |
+|---|---|---|---|
+| `inicio` | Inicio | rojo (`danger`) | 1 |
+| `en_proceso` | En proceso | naranja (`warning`) | 2 |
+| `logro_esperado` | Logro esperado | amarillo (`amber`) | 3 |
+| `logro_destacado` | Logro destacado | verde (`success`) | 4 |
 
-    public function color(): string
-    {
-        return match($this) {
-            self::NotAchieved       => 'danger',   // Filament
-            self::PartiallyAchieved => 'warning',
-            self::Achieved          => 'success',
-            self::Exceeded          => 'info',
-        };
-    }
-
-    public function numericValue(): int
-    {
-        return match($this) {
-            self::NotAchieved       => 1,
-            self::PartiallyAchieved => 2,
-            self::Achieved          => 3,
-            self::Exceeded          => 4,
-        };
-    }
-
-    // Para cálculos internos — NUNCA mostrar este valor al usuario
-    public static function fromNumeric(int $value): self
-    {
-        return match($value) {
-            1 => self::NotAchieved,
-            2 => self::PartiallyAchieved,
-            3 => self::Achieved,
-            4 => self::Exceeded,
-        };
-    }
-}
-```
+`EvaluationResult.rubric_level_id` es una FK real a `rubric_levels.id` — nunca un
+string ni un número crudo.
 
 ## Regla de oro: nunca mostrar el número
 
 ```php
-// ✅ CORRECTO en Filament
-TextColumn::make('level')
+// ✅ CORRECTO en Filament — el label y el color vienen del registro relacionado
+TextColumn::make('rubricLevel.label')
     ->badge()
-    ->formatStateUsing(fn (string $state) => RubricLevel::from($state)->label())
-    ->color(fn (string $state) => RubricLevel::from($state)->color()),
+    ->color(fn (EvaluationResult $record) => $record->rubricLevel->color),
 
-// ✅ CORRECTO en Blade
-<x-rubric-badge :level="$result->level" />
-
-// ❌ INCORRECTO — nunca mostrar el valor numérico
-{{ $result->numericValue() }}  // NO
-TextColumn::make('numeric_value'),  // NO
+// ❌ INCORRECTO — nunca mostrar rubric_levels.order ni ningún valor numérico
+TextColumn::make('rubricLevel.order'),  // NO
 ```
 
 ## Flujo de evaluación (EvaluateSubmissionAction)
+
+Una entrega puede tener **más de una evaluación** (una por `evaluator_type`: hoy solo
+`teacher`; `self`/`peer` quedan reservados para cuando se active auto/coevaluación).
+`unique(submission_id, evaluator_type)` es lo que lo permite sin duplicar evaluaciones
+del mismo tipo.
 
 ```php
 // app/Modules/Assessment/Actions/EvaluateSubmissionAction.php
 final class EvaluateSubmissionAction
 {
     public function execute(
-        User $teacher,
+        User $evaluator,
         Submission $submission,
-        array $criteriaResults, // ['criterion_id' => 'achieved', ...]
+        array $criteriaResults, // ['criterion_id' => rubric_level_id, ...]
         ?string $feedback = null,
+        string $evaluatorType = 'teacher',
     ): Evaluation {
-        abort_unless($teacher->can('evaluate', $submission), 403);
-        abort_if($submission->evaluation()->exists(), 422, 'Esta entrega ya fue evaluada.');
+        return DB::transaction(function () use ($evaluator, $submission, $criteriaResults, $feedback, $evaluatorType) {
+            $evaluation = Evaluation::updateOrCreate(
+                ['submission_id' => $submission->id, 'evaluator_type' => $evaluatorType],
+                ['evaluated_by' => $evaluator->id, 'feedback' => $feedback, 'evaluated_at' => now()],
+            );
 
-        return DB::transaction(function () use ($teacher, $submission, $criteriaResults, $feedback) {
-            $evaluation = Evaluation::create([
-                'submission_id' => $submission->id,
-                'evaluated_by'  => $teacher->id,
-                'feedback'      => $feedback,
-                'evaluated_at'  => now(),
-            ]);
-
-            foreach ($criteriaResults as $criterionId => $level) {
-                EvaluationResult::create([
-                    'evaluation_id'      => $evaluation->id,
-                    'rubric_criterion_id'=> $criterionId,
-                    'level'              => $level, // string del enum
-                ]);
+            foreach ($criteriaResults as $criterionId => $rubricLevelId) {
+                EvaluationResult::updateOrCreate(
+                    ['evaluation_id' => $evaluation->id, 'rubric_criterion_id' => $criterionId],
+                    ['rubric_level_id' => $rubricLevelId],
+                );
             }
-
-            $submission->update(['status' => 'evaluated']);
-
-            // Evento → listeners recalculan progreso, notifican padre
-            event(new SubmissionEvaluated($evaluation));
 
             return $evaluation;
         });
@@ -123,18 +75,14 @@ final class EvaluateSubmissionAction
 ## Formulario de evaluación en Filament (modal)
 
 ```php
-Tables\Actions\Action::make('evaluate')
+Action::make('evaluate')
     ->label('Evaluar')
-    ->icon('heroicon-o-check-badge')
-    ->visible(fn (Submission $record) => ! $record->evaluation()->exists())
-    ->form(function (Submission $record) {
-        $criteria = $record->expectedEvidence->rubric->criteria;
+    ->schema(function (ExpectedEvidence $record) {
+        $criteria = $record->rubric->criteria;
         return $criteria->map(fn ($criterion) =>
             Select::make("criteria.{$criterion->id}")
                 ->label($criterion->name)
-                ->options(collect(RubricLevel::cases())->mapWithKeys(
-                    fn ($level) => [$level->value => $level->label()]
-                ))
+                ->options(RubricLevel::orderBy('order')->pluck('label', 'id'))
                 ->required()
         )->concat([
             Textarea::make('feedback')->label('Comentario general')->nullable(),
@@ -150,26 +98,40 @@ Tables\Actions\Action::make('evaluate')
     });
 ```
 
-## Cálculo del nivel promedio (para student_metrics)
+## Cálculo del nivel consolidado de una evaluación
+
+Insumo que Tracking va a consumir después (progreso, boletín) — este hito solo
+construye el cálculo, no lo muestra en ningún reporte todavía.
 
 ```php
-// Promedio ponderado como valor numérico interno — solo para cálculos
-$avgNumeric = EvaluationResult::whereIn('evaluation_id', $evaluationIds)
-    ->get()
-    ->avg(fn ($r) => RubricLevel::from($r->level)->numericValue());
+// Moda de los niveles de los EvaluationResult de una Evaluation.
+// Empate → gana el nivel más bajo (criterio conservador).
+public function consolidatedLevel(): ?RubricLevel
+{
+    $counts = $this->results()
+        ->selectRaw('rubric_level_id, COUNT(*) as total')
+        ->groupBy('rubric_level_id')
+        ->pluck('total', 'rubric_level_id');
 
-// Guardar en student_metrics como decimal (1.00 - 4.00)
-// NUNCA mostrar este decimal al usuario — convertir a texto/color siempre
+    if ($counts->isEmpty()) {
+        return null;
+    }
+
+    $maxCount = $counts->max();
+    $tiedLevelIds = $counts->filter(fn ($count) => $count === $maxCount)->keys();
+
+    return RubricLevel::whereIn('id', $tiedLevelIds)->orderBy('order')->first();
+}
 ```
 
 ## Presentación para padres (lenguaje humano)
 
 ```php
-// En el dashboard del padre, traducir a frases legibles
-$levelText = match(RubricLevel::from($level)) {
-    RubricLevel::NotAchieved       => 'Necesita refuerzo en este tema',
-    RubricLevel::PartiallyAchieved => 'Está en camino, puede mejorar',
-    RubricLevel::Achieved          => 'Cumplió con lo esperado',
-    RubricLevel::Exceeded          => 'Fue más allá de lo esperado',
+// En el dashboard del padre, traducir a frases legibles a partir del label del catálogo
+$levelText = match($rubricLevel->key) {
+    'inicio'          => 'Necesita refuerzo en este tema',
+    'en_proceso'      => 'Está en camino, puede mejorar',
+    'logro_esperado'  => 'Cumplió con lo esperado',
+    'logro_destacado' => 'Fue más allá de lo esperado',
 };
 ```
