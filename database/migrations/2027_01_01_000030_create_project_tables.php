@@ -7,7 +7,8 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 // Módulo Project: el corazón del ABP.
-// Proyecto → Fases/Hitos → Guías (pre-creadas) + Recursos (del docente) + Evidencias esperadas.
+// Proyecto (por ciclo, 1 de 2 al año) → Fases (las 4 institucionales, fijas y en
+// orden) → Guías (pre-creadas) + Recursos (del docente) + Evidencias esperadas.
 return new class extends Migration
 {
     public function up(): void
@@ -15,25 +16,26 @@ return new class extends Migration
         Schema::create('projects', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('institution_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('group_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('cycle_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('created_by_user_id')->constrained('users')->cascadeOnDelete();
             $table->string('title');
-            $table->text('description')->nullable();
-            $table->unsignedTinyInteger('duration_months'); // 3 o 6
-            $table->date('starts_at');
-            $table->date('ends_at');
-            $table->string('status')->default('draft'); // draft | active | finished | archived
-            $table->json('progress_weights')->nullable(); // override de pesos de la barra de avance
+            $table->longText('problem_situation')->nullable();
+            $table->text('guiding_question')->nullable();
+            $table->text('purpose')->nullable();
+            $table->unsignedTinyInteger('semester'); // 1 o 2
+            $table->unsignedSmallInteger('year');
+            $table->unsignedTinyInteger('suggested_duration_weeks')->nullable();
+            $table->longText('expected_impact')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
 
-        // Un proyecto ABP es transversal: puede cubrir varias materias.
-        Schema::create('project_subject', function (Blueprint $table) {
+        // Un proyecto ABP puede integrar varios campos de pensamiento.
+        Schema::create('project_thinking_field', function (Blueprint $table) {
             $table->id();
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('subject_id')->constrained()->cascadeOnDelete();
-            $table->unique(['project_id', 'subject_id']);
+            $table->foreignId('thinking_field_id')->constrained()->cascadeOnDelete();
+            $table->unique(['project_id', 'thinking_field_id']);
         });
 
         Schema::create('phases', function (Blueprint $table) {
@@ -41,12 +43,11 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->foreignId('project_id')->constrained()->cascadeOnDelete();
             $table->string('name');
+            $table->unsignedTinyInteger('order'); // 1..4, orden institucional fijo
             $table->text('description')->nullable();
-            $table->unsignedTinyInteger('position'); // orden
-            $table->date('suggested_deadline')->nullable();
             $table->timestamps();
             $table->softDeletes();
-            $table->unique(['project_id', 'position']);
+            $table->unique(['project_id', 'order']);
         });
 
         // Las guías "ya están creadas": contenido base del colegio.
@@ -54,39 +55,38 @@ return new class extends Migration
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('phase_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('subject_id')->nullable()->constrained()->nullOnDelete();
             $table->string('title');
             $table->longText('content')->nullable(); // HTML/Markdown de la guía
-            $table->unsignedTinyInteger('position');
-            $table->boolean('is_published')->default(false);
             $table->timestamps();
             $table->softDeletes();
         });
 
-        // Recursos complementarios que sube el docente (archivos vía medialibrary, o enlaces).
+        // Recursos complementarios que sube el docente: cuelgan de una fase, o
+        // específicamente de una guía dentro de esa fase.
         Schema::create('resources', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
+            $table->foreignId('phase_id')->constrained()->cascadeOnDelete();
             $table->foreignId('guide_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->foreignId('phase_id')->nullable()->constrained()->cascadeOnDelete();
-            $table->foreignId('uploaded_by')->constrained('users')->cascadeOnDelete();
             $table->string('title');
-            $table->string('type');          // file | link | video
-            $table->string('url')->nullable(); // para links/videos; archivos van por medialibrary
+            $table->string('type', 20); // pdf | video | enlace
+            $table->string('url_or_path');
             $table->timestamps();
             $table->softDeletes();
         });
 
-        // Qué debe entregar el estudiante en cada fase.
+        // Qué debe entregar el estudiante en cada fase. Las evidencias que
+        // comparten el mismo alternative_group (no nulo) son mutuamente
+        // excluyentes: el estudiante/equipo entrega una de ellas, no todas.
         Schema::create('expected_evidences', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
             $table->foreignId('phase_id')->constrained()->cascadeOnDelete();
-            $table->string('title');
-            $table->text('instructions')->nullable();
-            $table->string('type');           // file | text | forum_participation
-            $table->foreignId('rubric_id')->nullable(); // FK se agrega en la migración de assessment
-            $table->date('deadline')->nullable();
+            $table->string('type', 30); // archivo | texto | participación en foro
+            $table->text('description')->nullable();
+            $table->boolean('is_required')->default(true);
+            $table->string('alternative_group', 60)->nullable();
+            $table->foreignId('rubric_id')->nullable(); // FK diferida, se agrega en la migración de assessment (Hito 2)
             $table->timestamps();
             $table->softDeletes();
         });
@@ -98,7 +98,7 @@ return new class extends Migration
         Schema::dropIfExists('resources');
         Schema::dropIfExists('guides');
         Schema::dropIfExists('phases');
-        Schema::dropIfExists('project_subject');
+        Schema::dropIfExists('project_thinking_field');
         Schema::dropIfExists('projects');
     }
 };

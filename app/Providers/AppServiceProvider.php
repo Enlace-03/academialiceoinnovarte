@@ -11,6 +11,9 @@ use App\Modules\Institution\Policies\CyclePolicy;
 use App\Modules\Institution\Policies\GroupPolicy;
 use App\Modules\Institution\Policies\SchoolGradePolicy;
 use App\Modules\Institution\Policies\ThinkingFieldPolicy;
+use App\Modules\Project\Models\Project;
+use App\Modules\Project\Observers\ProjectObserver;
+use App\Modules\Project\Policies\ProjectPolicy;
 use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
@@ -38,6 +41,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ThinkingField::class, ThinkingFieldPolicy::class);
         Gate::policy(SchoolGrade::class, SchoolGradePolicy::class);
         Gate::policy(Group::class, GroupPolicy::class);
+        Gate::policy(Project::class, ProjectPolicy::class);
         Gate::before(fn ($user, $ability) => $user->hasRole('super_admin') ? true : null);
+
+        Project::observe(ProjectObserver::class);
     }
 }

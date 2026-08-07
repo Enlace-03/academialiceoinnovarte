@@ -1,0 +1,73 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Modules\Project\Models;
+
+use App\Models\User;
+use App\Modules\Institution\Models\Cycle;
+use App\Modules\Institution\Models\ThinkingField;
+use Database\Factories\ProjectFactory;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Database\Eloquent\SoftDeletes;
+
+#[Fillable([
+    'cycle_id', 'created_by_user_id', 'title', 'problem_situation',
+    'guiding_question', 'purpose', 'semester', 'year',
+    'suggested_duration_weeks', 'expected_impact',
+])]
+class Project extends Model
+{
+    use HasFactory, HasUuids, SoftDeletes;
+
+    protected static function newFactory(): ProjectFactory
+    {
+        return ProjectFactory::new();
+    }
+
+    public function uniqueIds(): array
+    {
+        return ['uuid'];
+    }
+
+    public function cycle(): BelongsTo
+    {
+        return $this->belongsTo(Cycle::class);
+    }
+
+    public function createdBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by_user_id');
+    }
+
+    public function thinkingFields(): BelongsToMany
+    {
+        return $this->belongsToMany(ThinkingField::class, 'project_thinking_field');
+    }
+
+    public function phases(): HasMany
+    {
+        return $this->hasMany(Phase::class)->orderBy('order');
+    }
+
+    public function teams(): HasMany
+    {
+        return $this->hasMany(ProjectTeam::class);
+    }
+
+    /**
+     * Conveniencia para el panel de administración: el cronograma de
+     * StudentPhaseSchedule vive en Phase, no en Project directamente.
+     */
+    public function studentPhaseSchedules(): HasManyThrough
+    {
+        return $this->hasManyThrough(StudentPhaseSchedule::class, Phase::class);
+    }
+}

@@ -64,6 +64,16 @@ app/
 - `testing-standards` — Pest, qué testear
 - `git-workflow` — flujo main/deploy para cPanel
 
+## Regla absoluta: comandos destructivos de base de datos
+
+Nunca ejecutar `migrate:fresh`, `migrate:rollback`, `db:wipe`, `TRUNCATE`, `DROP TABLE`,
+o cualquier comando que borre datos, contra ninguna base (dev o testing), sin antes
+pegarle a Diego el comando exacto y esperar su confirmación explícita. Sin excepción
+de urgencia, y sin excepción "solo quiero verificar algo rápido". Verificar dos veces
+`--env=` y `DB_DATABASE` antes de proponer el comando: el `.env` por defecto apunta a
+la base de **desarrollo**, no a testing — un `migrate:fresh --force` sin `--env=testing`
+borra datos reales de dev. (Incidente: 2026-08-07, hito 1C — se restauró vía seeders.)
+
 ## Comandos frecuentes
 ```bash
 php artisan migrate:fresh --seed    # reset completo
