@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Institution\Models;
 
+use App\Models\User;
 use Database\Factories\SchoolGradeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -35,8 +36,8 @@ class SchoolGrade extends Model
         return $this->belongsTo(Cycle::class);
     }
 
-    public function groups(): HasMany
+    public function users(): HasMany
     {
-        return $this->hasMany(Group::class);
+        return $this->hasMany(User::class, 'school_grade_id');
     }
 }

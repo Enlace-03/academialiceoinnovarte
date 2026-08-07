@@ -115,13 +115,13 @@ class UserForm
                 ->description('Solo aplica a usuarios con rol Estudiante.')
                 ->columns(2)
                 ->schema([
-                    Select::make('school_grade_filter')
+                    Select::make('school_grade_id')
                         ->label('Grado')
                         ->live()
-                        ->dehydrated(false)
+                        ->dehydratedWhenHidden()
                         ->visible(fn (Get $get) => in_array($studentRoleId, $get('roles') ?? []))
                         ->options(function (?User $record) {
-                            $currentGradeId = $record?->group?->school_grade_id;
+                            $currentGradeId = $record?->school_grade_id;
 
                             return SchoolGrade::query()
                                 ->where('institution_id', Institution::query()->value('id'))
@@ -133,9 +133,6 @@ class UserForm
                                     ))
                                 ->orderBy('level')
                                 ->pluck('name', 'id');
-                        })
-                        ->afterStateHydrated(function (Select $component, ?User $record) {
-                            $component->state($record?->group?->school_grade_id);
                         }),
 
                     Select::make('group_id')
@@ -144,14 +141,20 @@ class UserForm
                         ->dehydratedWhenHidden()
                         ->visible(fn (Get $get) => in_array($studentRoleId, $get('roles') ?? []))
                         ->options(function (Get $get, ?User $record) {
-                            $schoolGradeId = $get('school_grade_filter');
+                            $schoolGradeId = $get('school_grade_id');
 
                             if (! $schoolGradeId) {
                                 return [];
                             }
 
+                            $cycleId = SchoolGrade::query()->whereKey($schoolGradeId)->value('cycle_id');
+
+                            if (! $cycleId) {
+                                return [];
+                            }
+
                             return Group::query()
-                                ->where('school_grade_id', $schoolGradeId)
+                                ->where('cycle_id', $cycleId)
                                 ->where(fn ($query) => $query
                                     ->where('year', InstitutionSetting::get(
                                         'current_academic_year',

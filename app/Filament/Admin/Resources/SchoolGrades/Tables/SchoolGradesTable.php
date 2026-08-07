@@ -25,9 +25,9 @@ class SchoolGradesTable
                     ->label('Ciclo')
                     ->badge(),
 
-                TextColumn::make('groups_count')
-                    ->label('Grupos')
-                    ->counts('groups'),
+                TextColumn::make('users_count')
+                    ->label('Estudiantes')
+                    ->counts('users'),
 
                 ToggleColumn::make('is_active')
                     ->label('Activo'),

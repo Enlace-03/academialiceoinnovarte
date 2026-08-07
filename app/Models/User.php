@@ -20,7 +20,7 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'group_id', 'document_number', 'is_active'])]
+#[Fillable(['name', 'email', 'password', 'group_id', 'school_grade_id', 'document_number', 'is_active'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -44,9 +44,9 @@ class User extends Authenticatable implements FilamentUser
         return $this->belongsTo(Group::class);
     }
 
-    public function schoolGrade(): ?SchoolGrade
+    public function schoolGrade(): BelongsTo
     {
-        return $this->group?->schoolGrade;
+        return $this->belongsTo(SchoolGrade::class, 'school_grade_id');
     }
 
     public function children(): BelongsToMany

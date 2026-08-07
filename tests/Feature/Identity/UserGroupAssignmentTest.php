@@ -5,6 +5,7 @@ namespace Tests\Feature\Identity;
 use App\Filament\Admin\Resources\Users\Pages\CreateUser;
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
 use App\Models\User;
+use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Institution\Models\SchoolGrade;
@@ -23,6 +24,8 @@ class UserGroupAssignmentTest extends TestCase
 
     protected User $admin;
 
+    protected Cycle $cycle;
+
     protected SchoolGrade $schoolGrade;
 
     protected function setUp(): void
@@ -38,7 +41,8 @@ class UserGroupAssignmentTest extends TestCase
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
         $institution = Institution::factory()->create();
-        $this->schoolGrade = SchoolGrade::factory()->for($institution)->create();
+        $this->cycle = Cycle::factory()->for($institution)->create();
+        $this->schoolGrade = SchoolGrade::factory()->for($institution)->for($this->cycle)->create();
     }
 
     protected function studentRoleId(): int
@@ -51,9 +55,9 @@ class UserGroupAssignmentTest extends TestCase
         return Role::where('name', 'teacher')->value('id');
     }
 
-    public function test_saving_a_student_with_a_group_persists_group_id(): void
+    public function test_saving_a_student_with_a_group_persists_group_id_and_school_grade_id(): void
     {
-        $group = Group::factory()->for($this->schoolGrade)->create([
+        $group = Group::factory()->for($this->cycle)->create([
             'year' => config('school.current_academic_year'),
         ]);
 
@@ -63,7 +67,7 @@ class UserGroupAssignmentTest extends TestCase
                 'email' => 'ana.estudiante@test.com',
                 'password' => 'secret123',
                 'roles' => [$this->studentRoleId()],
-                'school_grade_filter' => $this->schoolGrade->id,
+                'school_grade_id' => $this->schoolGrade->id,
                 'group_id' => $group->id,
             ])
             ->call('create')
@@ -71,18 +75,50 @@ class UserGroupAssignmentTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'email' => 'ana.estudiante@test.com',
+            'school_grade_id' => $this->schoolGrade->id,
             'group_id' => $group->id,
         ]);
     }
 
-    public function test_group_select_filters_by_current_academic_year(): void
+    public function test_group_select_filters_by_the_cycle_derived_from_the_chosen_grade(): void
     {
-        $currentYearGroup = Group::factory()->for($this->schoolGrade)->create([
+        $otherCycleInstitution = $this->schoolGrade->institution;
+        $otherCycle = Cycle::factory()->for($otherCycleInstitution)->create();
+
+        $sameCycleGroup = Group::factory()->for($this->cycle)->create([
             'name' => 'A',
             'year' => config('school.current_academic_year'),
         ]);
 
-        $otherYearGroup = Group::factory()->for($this->schoolGrade)->create([
+        $otherCycleGroup = Group::factory()->for($otherCycle)->create([
+            'name' => 'B',
+            'year' => config('school.current_academic_year'),
+        ]);
+
+        Livewire::test(CreateUser::class)
+            ->fillForm([
+                'roles' => [$this->studentRoleId()],
+                'school_grade_id' => $this->schoolGrade->id,
+            ])
+            ->assertFormFieldExists(
+                'group_id',
+                function (Select $field) use ($sameCycleGroup, $otherCycleGroup): bool {
+                    $options = $field->getOptions();
+
+                    return array_key_exists($sameCycleGroup->id, $options)
+                        && ! array_key_exists($otherCycleGroup->id, $options);
+                }
+            );
+    }
+
+    public function test_group_select_filters_by_current_academic_year(): void
+    {
+        $currentYearGroup = Group::factory()->for($this->cycle)->create([
+            'name' => 'A',
+            'year' => config('school.current_academic_year'),
+        ]);
+
+        $otherYearGroup = Group::factory()->for($this->cycle)->create([
             'name' => 'B',
             'year' => ((int) config('school.current_academic_year')) + 1,
         ]);
@@ -90,7 +126,7 @@ class UserGroupAssignmentTest extends TestCase
         Livewire::test(CreateUser::class)
             ->fillForm([
                 'roles' => [$this->studentRoleId()],
-                'school_grade_filter' => $this->schoolGrade->id,
+                'school_grade_id' => $this->schoolGrade->id,
             ])
             ->assertFormFieldExists(
                 'group_id',
@@ -107,16 +143,19 @@ class UserGroupAssignmentTest extends TestCase
     {
         $otherYear = ((int) config('school.current_academic_year')) + 1;
 
-        $oldGroup = Group::factory()->for($this->schoolGrade)->create([
+        $oldGroup = Group::factory()->for($this->cycle)->create([
             'name' => 'A',
             'year' => $otherYear,
         ]);
 
-        $student = User::factory()->create(['group_id' => $oldGroup->id]);
+        $student = User::factory()->create([
+            'school_grade_id' => $this->schoolGrade->id,
+            'group_id' => $oldGroup->id,
+        ]);
         $student->assignRole('student');
 
         Livewire::test(EditUser::class, ['record' => $student->getRouteKey()])
-            ->assertFormSet(['school_grade_filter' => $this->schoolGrade->id])
+            ->assertFormSet(['school_grade_id' => $this->schoolGrade->id])
             ->assertFormFieldExists(
                 'group_id',
                 fn (Select $field): bool => array_key_exists($oldGroup->id, $field->getOptions())
@@ -132,7 +171,7 @@ class UserGroupAssignmentTest extends TestCase
 
     public function test_a_non_student_role_cannot_end_up_with_a_group_id(): void
     {
-        $group = Group::factory()->for($this->schoolGrade)->create([
+        $group = Group::factory()->for($this->cycle)->create([
             'year' => config('school.current_academic_year'),
         ]);
 
@@ -142,12 +181,12 @@ class UserGroupAssignmentTest extends TestCase
                 'email' => 'profe.test@test.com',
                 'password' => 'secret123',
                 'roles' => [$this->teacherRoleId()],
-                // school_grade_filter is set so group_id is among the field's
+                // school_grade_id is set so group_id is among the field's
                 // own valid options (otherwise Filament's Select would
                 // silently null an out-of-options value before our rule
                 // ever runs) — simulates a tampered request where a
                 // non-student role is combined with a group assignment.
-                'school_grade_filter' => $this->schoolGrade->id,
+                'school_grade_id' => $this->schoolGrade->id,
                 'group_id' => $group->id,
             ])
             ->call('create')

@@ -2,8 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Group;
-use App\Modules\Institution\Models\SchoolGrade;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -16,7 +16,7 @@ class GroupFactory extends Factory
     public function definition(): array
     {
         return [
-            'school_grade_id' => SchoolGrade::factory(),
+            'cycle_id' => Cycle::factory(),
             'name' => fake()->randomElement(['A', 'B']),
             'year' => (int) config('school.current_academic_year'),
         ];

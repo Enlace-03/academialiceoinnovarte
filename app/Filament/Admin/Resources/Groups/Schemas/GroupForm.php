@@ -2,8 +2,8 @@
 
 namespace App\Filament\Admin\Resources\Groups\Schemas;
 
+use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\InstitutionSetting;
-use App\Modules\Institution\Models\SchoolGrade;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Schema;
@@ -13,11 +13,10 @@ class GroupForm
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('school_grade_id')
-                ->label('Grado')
-                ->options(fn () => SchoolGrade::query()
-                    ->where('is_active', true)
-                    ->orderBy('level')
+            Select::make('cycle_id')
+                ->label('Ciclo')
+                ->options(fn () => Cycle::query()
+                    ->orderBy('order')
                     ->pluck('name', 'id'))
                 ->required()
                 ->searchable(),

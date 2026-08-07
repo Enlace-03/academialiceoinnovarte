@@ -38,14 +38,22 @@ class CycleRelationsTest extends TestCase
         $this->assertNull($grade->cycle);
     }
 
-    public function test_cycle_to_school_grade_to_group_chain(): void
+    public function test_cycle_has_many_groups(): void
     {
         $cycle = Cycle::factory()->create();
-        $grade = SchoolGrade::factory()->for($cycle)->create();
-        $group = Group::factory()->for($grade)->create();
+        $groupA = Group::factory()->for($cycle)->create(['name' => 'A']);
+        $groupB = Group::factory()->for($cycle)->create(['name' => 'B']);
 
-        $this->assertTrue($group->schoolGrade->is($grade));
-        $this->assertTrue($group->schoolGrade->cycle->is($cycle));
-        $this->assertTrue($cycle->schoolGrades->first()->groups->contains($group));
+        $this->assertTrue($cycle->groups->contains($groupA));
+        $this->assertTrue($cycle->groups->contains($groupB));
+        $this->assertCount(2, $cycle->groups);
+    }
+
+    public function test_group_belongs_to_cycle(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $group = Group::factory()->for($cycle)->create();
+
+        $this->assertTrue($group->cycle->is($cycle));
     }
 }

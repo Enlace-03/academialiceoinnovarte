@@ -2,7 +2,7 @@
 
 namespace App\Filament\Admin\Resources\Groups\Tables;
 
-use App\Modules\Institution\Models\SchoolGrade;
+use App\Modules\Institution\Models\Cycle;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -13,8 +13,8 @@ class GroupsTable
     {
         return $table
             ->columns([
-                TextColumn::make('schoolGrade.name')
-                    ->label('Grado')
+                TextColumn::make('cycle.name')
+                    ->label('Ciclo')
                     ->sortable(),
 
                 TextColumn::make('name')
@@ -30,9 +30,9 @@ class GroupsTable
                     ->counts('users'),
             ])
             ->filters([
-                SelectFilter::make('school_grade_id')
-                    ->label('Grado')
-                    ->options(fn () => SchoolGrade::query()->orderBy('level')->pluck('name', 'id')),
+                SelectFilter::make('cycle_id')
+                    ->label('Ciclo')
+                    ->options(fn () => Cycle::query()->orderBy('order')->pluck('name', 'id')),
             ])
             ->defaultSort('year', 'desc');
     }

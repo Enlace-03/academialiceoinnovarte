@@ -189,32 +189,32 @@ class InstitutionResourcesCrudTest extends TestCase
 
     public function test_groups_list_loads(): void
     {
-        $grade = SchoolGrade::factory()->for($this->institution)->create();
-        Group::factory()->for($grade)->create();
+        $cycle = Cycle::factory()->for($this->institution)->create();
+        Group::factory()->for($cycle)->create();
 
         Livewire::test(ListGroups::class)->assertOk();
     }
 
     public function test_group_can_be_created(): void
     {
-        $grade = SchoolGrade::factory()->for($this->institution)->create(['is_active' => true]);
+        $cycle = Cycle::factory()->for($this->institution)->create();
 
         Livewire::test(CreateGroup::class)
             ->fillForm([
-                'school_grade_id' => $grade->id,
+                'cycle_id' => $cycle->id,
                 'name' => 'C',
                 'year' => (int) config('school.current_academic_year'),
             ])
             ->call('create')
             ->assertHasNoFormErrors();
 
-        $this->assertDatabaseHas('groups', ['school_grade_id' => $grade->id, 'name' => 'C']);
+        $this->assertDatabaseHas('groups', ['cycle_id' => $cycle->id, 'name' => 'C']);
     }
 
     public function test_group_can_be_edited(): void
     {
-        $grade = SchoolGrade::factory()->for($this->institution)->create(['is_active' => true]);
-        $group = Group::factory()->for($grade)->create(['name' => 'A']);
+        $cycle = Cycle::factory()->for($this->institution)->create();
+        $group = Group::factory()->for($cycle)->create(['name' => 'A']);
 
         Livewire::test(EditGroup::class, ['record' => $group->getRouteKey()])
             ->fillForm(['name' => 'B'])

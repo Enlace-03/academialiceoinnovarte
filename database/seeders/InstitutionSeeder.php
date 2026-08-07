@@ -144,24 +144,32 @@ class InstitutionSeeder extends Seeder
         }
 
         // ------------------------------------------------------------------
-        // 5. Grupos A y B por grado, año lectivo 2027
+        // 5. Grupos por ciclo (Hito 1B: el grupo/salón ya no es dueño de un
+        //    grado individual, sino de un ciclo — puede mezclar estudiantes
+        //    de varios grados del mismo ciclo). Dos secciones (A/B) por
+        //    ciclo por defecto, confirmado con dirección pedagógica para
+        //    el año lectivo 2027.
         // ------------------------------------------------------------------
-        foreach ($gradeIds as $level => $gradeId) {
-            foreach (['A', 'B'] as $groupName) {
+        foreach ($cycleIds as $order => $cycleId) {
+            $cycleName = $cycles[$order]['name'];
+
+            foreach (['A', 'B'] as $section) {
+                $groupName = "{$cycleName} - {$section}";
+
                 $exists = DB::table('groups')
-                    ->where('school_grade_id', $gradeId)
+                    ->where('cycle_id', $cycleId)
                     ->where('name', $groupName)
                     ->where('year', 2027)
                     ->exists();
 
                 if (! $exists) {
                     DB::table('groups')->insert([
-                        'uuid'            => Str::uuid(),
-                        'school_grade_id' => $gradeId,
-                        'name'            => $groupName,
-                        'year'            => 2027,
-                        'created_at'      => now(),
-                        'updated_at'      => now(),
+                        'uuid'       => Str::uuid(),
+                        'cycle_id'   => $cycleId,
+                        'name'       => $groupName,
+                        'year'       => 2027,
+                        'created_at' => now(),
+                        'updated_at' => now(),
                     ]);
                 }
             }

@@ -27,6 +27,10 @@ class CyclesTable
                 TextColumn::make('school_grades_count')
                     ->label('Grados')
                     ->counts('schoolGrades'),
+
+                TextColumn::make('groups_count')
+                    ->label('Grupos')
+                    ->counts('groups'),
             ])
             ->defaultSort('order');
     }

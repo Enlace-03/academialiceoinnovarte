@@ -4,6 +4,7 @@ namespace Tests\Feature\Identity;
 
 use App\Filament\Admin\Resources\Users\Pages\ListUsers;
 use App\Models\User;
+use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Institution\Models\SchoolGrade;
@@ -80,25 +81,26 @@ class UsersTableTabsTest extends TestCase
     public function test_grado_grupo_column_is_hidden_outside_the_estudiantes_tab(): void
     {
         Livewire::test(ListUsers::class)
-            ->assertTableColumnHidden('group.name');
+            ->assertTableColumnHidden('grade_group');
 
         Livewire::test(ListUsers::class)
             ->set('activeTab', 'guardians')
-            ->assertTableColumnHidden('group.name');
+            ->assertTableColumnHidden('grade_group');
     }
 
     public function test_grado_grupo_column_is_visible_with_correct_value_on_estudiantes_tab(): void
     {
         $institution = Institution::factory()->create();
-        $schoolGrade = SchoolGrade::factory()->for($institution)->create(['name' => '5° de Primaria']);
-        $group = Group::factory()->for($schoolGrade)->create(['name' => 'A']);
+        $cycle = Cycle::factory()->for($institution)->create();
+        $schoolGrade = SchoolGrade::factory()->for($institution)->for($cycle)->create(['name' => '5° de Primaria']);
+        $group = Group::factory()->for($cycle)->create(['name' => 'A']);
 
-        $this->student->update(['group_id' => $group->id]);
+        $this->student->update(['school_grade_id' => $schoolGrade->id, 'group_id' => $group->id]);
 
         Livewire::test(ListUsers::class)
             ->set('activeTab', 'students')
-            ->assertTableColumnVisible('group.name')
-            ->assertTableColumnStateSet('group.name', '5° de Primaria - A', $this->student);
+            ->assertTableColumnVisible('grade_group')
+            ->assertTableColumnStateSet('grade_group', '5° de Primaria - A', $this->student);
     }
 
     public function test_children_column_is_hidden_outside_the_acudientes_tab(): void

@@ -19,7 +19,7 @@ class UsersTable
     public static function configure(Table $table): Table
     {
         return $table
-            ->modifyQueryUsing(fn (Builder $query) => $query->with(['group.schoolGrade', 'children']))
+            ->modifyQueryUsing(fn (Builder $query) => $query->with(['group.cycle', 'schoolGrade', 'children']))
             ->columns([
                 TextColumn::make('name')
                     ->label('Nombre')
@@ -37,10 +37,10 @@ class UsersTable
                     ->formatStateUsing(fn (string $state): string => PermissionLabels::role($state))
                     ->separator(','),
 
-                TextColumn::make('group.name')
+                TextColumn::make('grade_group')
                     ->label('Grado / Grupo')
-                    ->getStateUsing(fn (User $record): string => $record->group
-                        ? "{$record->group->schoolGrade->name} - {$record->group->name}"
+                    ->getStateUsing(fn (User $record): string => $record->schoolGrade
+                        ? "{$record->schoolGrade->name} - " . ($record->group?->name ?? '—')
                         : '—')
                     // Solo aplica a estudiantes: se oculta en las pestañas
                     // Personal y Acudientes (ver ListUsers::getTabs()).
@@ -90,13 +90,13 @@ class UsersTable
                     ->falseLabel('Inactivos'),
 
                 SelectFilter::make('group_id')
-                    ->label('Grado / Grupo')
+                    ->label('Grupo')
                     ->options(fn () => Group::query()
-                        ->with('schoolGrade')
+                        ->with('cycle')
                         ->get()
-                        ->sortBy(fn (Group $group) => [$group->schoolGrade->level, $group->name])
+                        ->sortBy(fn (Group $group) => [$group->cycle->order, $group->name])
                         ->mapWithKeys(fn (Group $group) => [
-                            $group->id => "{$group->schoolGrade->name} - {$group->name} ({$group->year})",
+                            $group->id => "{$group->cycle->name} - {$group->name} ({$group->year})",
                         ])
                         ->all()),
             ])

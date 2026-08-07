@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['school_grade_id', 'name', 'year'])]
+#[Fillable(['cycle_id', 'name', 'year'])]
 class Group extends Model
 {
     use HasFactory, HasUuids;
@@ -34,9 +34,9 @@ class Group extends Model
         return ['uuid'];
     }
 
-    public function schoolGrade(): BelongsTo
+    public function cycle(): BelongsTo
     {
-        return $this->belongsTo(SchoolGrade::class);
+        return $this->belongsTo(Cycle::class);
     }
 
     public function users(): HasMany

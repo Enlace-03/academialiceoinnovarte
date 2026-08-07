@@ -2,6 +2,8 @@
 
 namespace Tests\Feature\Institution;
 
+use App\Modules\Institution\Models\Cycle;
+use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\SchoolGrade;
 use Database\Seeders\InstitutionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -68,5 +70,23 @@ class InstitutionSeederTest extends TestCase
     public function test_all_seeded_grades_are_active(): void
     {
         $this->assertSame(10, SchoolGrade::where('is_active', true)->count());
+    }
+
+    public function test_seeds_two_groups_per_cycle(): void
+    {
+        $this->assertSame(8, Group::count());
+
+        Cycle::all()->each(function (Cycle $cycle) {
+            $this->assertSame(2, Group::where('cycle_id', $cycle->id)->count());
+        });
+    }
+
+    public function test_group_names_combine_cycle_name_and_section(): void
+    {
+        $exploratorio = Cycle::where('order', 1)->firstOrFail();
+
+        $names = Group::where('cycle_id', $exploratorio->id)->orderBy('name')->pluck('name')->all();
+
+        $this->assertSame(['Exploratorio - A', 'Exploratorio - B'], $names);
     }
 }

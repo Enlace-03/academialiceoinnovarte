@@ -5,6 +5,7 @@ namespace Tests\Feature\Institution;
 use App\Filament\Admin\Resources\Users\Pages\CreateUser;
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
 use App\Models\User;
+use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\Institution;
 use App\Modules\Institution\Models\SchoolGrade;
@@ -44,7 +45,7 @@ class SchoolGradeActiveSelectorTest extends TestCase
 
         Livewire::test(CreateUser::class)
             ->assertFormFieldExists(
-                'school_grade_filter',
+                'school_grade_id',
                 function (Select $field) use ($activeGrade, $inactiveGrade): bool {
                     $options = $field->getOptions();
 
@@ -56,12 +57,16 @@ class SchoolGradeActiveSelectorTest extends TestCase
 
     public function test_a_student_already_enrolled_in_a_now_inactive_grade_keeps_it_selectable_and_intact(): void
     {
-        $inactiveGrade = SchoolGrade::factory()->for($this->institution)->create(['is_active' => true]);
-        $group = Group::factory()->for($inactiveGrade)->create([
+        $cycle = Cycle::factory()->for($this->institution)->create();
+        $inactiveGrade = SchoolGrade::factory()->for($this->institution)->for($cycle)->create(['is_active' => true]);
+        $group = Group::factory()->for($cycle)->create([
             'year' => config('school.current_academic_year'),
         ]);
 
-        $student = User::factory()->create(['group_id' => $group->id]);
+        $student = User::factory()->create([
+            'school_grade_id' => $inactiveGrade->id,
+            'group_id' => $group->id,
+        ]);
         $student->assignRole('student');
 
         // Se desactiva el grado DESPUÉS de matricular al estudiante — simula el
@@ -69,9 +74,9 @@ class SchoolGradeActiveSelectorTest extends TestCase
         $inactiveGrade->update(['is_active' => false]);
 
         Livewire::test(EditUser::class, ['record' => $student->getRouteKey()])
-            ->assertFormSet(['school_grade_filter' => $inactiveGrade->id])
+            ->assertFormSet(['school_grade_id' => $inactiveGrade->id])
             ->assertFormFieldExists(
-                'school_grade_filter',
+                'school_grade_id',
                 fn (Select $field): bool => array_key_exists($inactiveGrade->id, $field->getOptions())
             )
             ->call('save')
@@ -79,6 +84,7 @@ class SchoolGradeActiveSelectorTest extends TestCase
 
         $this->assertDatabaseHas('users', [
             'id' => $student->id,
+            'school_grade_id' => $inactiveGrade->id,
             'group_id' => $group->id,
         ]);
     }
