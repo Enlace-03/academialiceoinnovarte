@@ -74,6 +74,18 @@ de urgencia, y sin excepción "solo quiero verificar algo rápido". Verificar do
 la base de **desarrollo**, no a testing — un `migrate:fresh --force` sin `--env=testing`
 borra datos reales de dev. (Incidente: 2026-08-07, hito 1C — se restauró vía seeders.)
 
+## Regla absoluta: nada de Google Admin Console real
+
+No usar la extensión de navegador ni ninguna forma de exploración semi-autónoma
+contra la Google Admin Console real del colegio, bajo ninguna circunstancia —
+ni siquiera "solo para revisar opciones". Gestiona identidad y datos de todo el
+colegio (menores incluidos), no es un entorno de desarrollo. Cualquier
+configuración ahí (cuenta de servicio, delegación a nivel de dominio, unidades
+compartidas) la hace la rectora misma como super administradora, siguiendo un
+instructivo preparado de antemano. Ver TODO.md #12 (integración de Google
+Workspace, diferida hasta confirmar licencia permanente) para el contexto
+completo y el diseño recomendado.
+
 ## Producción real (cPanel) — verificado antes del Hito de Tracking
 
 Verificación hecha en vivo contra el cPanel y la base de datos reales de producción

@@ -104,6 +104,26 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** si Tracking o el flujo de boletines necesita un criterio distinto (ej. promedio ponderado en vez de moda), es una decisión nueva a tomar en ese hito, no una corrección de esta — este criterio fue elegido específicamente para el cálculo cualitativo por evaluación, no para el consolidado numérico del boletín (fuera de alcance del Hito 2).
 
+## 12. Integración futura: Google Workspace for Education (almacenamiento de archivos)
+
+**Estado:** evaluado en profundidad, explícitamente diferido — no iniciar ningún trabajo de código ni exploración de la Google Admin Console hasta que se confirme la licencia permanente.
+
+**Contexto:** la rectora está gestionando la licencia de Google Workspace for Education Fundamentals — hoy tiene una licencia temporal (vigente hasta septiembre, renovable) mientras se agenda la reunión de valoración para la licencia permanente. Fundamentals incluye 100 TB de almacenamiento compartido gratuito para todo el dominio — una solución real al límite de 2.44 GB de disco del hosting compartido actual, identificado en la verificación de infraestructura.
+
+**Por qué se difiere, no se cancela:**
+- La licencia todavía es temporal — construir integración real contra un estado no confirmado arriesga retrabajo si algo cambia en la transición a permanente.
+- La Google Admin Console gestiona identidad y datos de todo el colegio, no es un entorno de desarrollo — cualquier configuración ahí (cuenta de servicio, delegación a nivel de dominio, unidades compartidas) debe hacerla la rectora misma como super administradora, siguiendo un instructivo preparado de antemano, nunca un agente explorando o piloteando directamente sobre el panel real. **Esto aplica en particular a Claude Code: no se debe usar la extensión de navegador ni ninguna forma de exploración semi-autónoma contra la Google Admin Console real bajo ninguna circunstancia, ni siquiera "solo para revisar opciones".**
+- Involucra datos personales de menores — cualquier decisión de almacenamiento debe reflejarse primero en el texto legal definitivo de la Política de Tratamiento de Datos (todavía en borrador), mencionando a Google como encargado del tratamiento antes de que un solo archivo real de un estudiante viva ahí.
+
+**Lo que ya está bien posicionado para cuando llegue el momento:** las columnas `file_disk`/`file_path`/`original_filename` de `submissions` (Hito 2) ya hacen el almacenamiento agnóstico al disco — conectar un driver de Google Drive más adelante es incremental, no requiere rediseñar el módulo de Evaluación.
+
+**Diseño recomendado para cuando se confirme la licencia permanente** (documentado para referencia futura, nada de esto se construye todavía):
+- Contenido institucional (guías, recursos oficiales que sube el colegio) → unidad compartida (Shared Drive) de Google, propiedad de la institución, vía cuenta de servicio con delegación a nivel de dominio autorizada por la rectora.
+- Entregas de estudiantes → patrón más ligero orientado a consentimiento explícito por archivo (Google Picker API o equivalente), priorizando menor privilegio dado que son datos de menores.
+- Video: considerar YouTube en modo no listado como complemento a Drive si el volumen de video crece, ya que Drive no está optimizado para streaming adaptativo.
+
+**Cuándo retomarlo:** cuando la rectora confirme la licencia permanente de Google Workspace for Education. En ese momento, preparar un instructivo paso a paso para que ella misma configure la cuenta de servicio y la delegación desde la consola real — no delegarlo a exploración automatizada.
+
 ---
 
 ## Notas de infraestructura (resueltas)
