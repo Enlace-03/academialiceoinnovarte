@@ -3,6 +3,12 @@
 namespace App\Providers;
 
 use App\Models\User;
+use App\Modules\Assessment\Models\Evaluation;
+use App\Modules\Assessment\Models\Observation;
+use App\Modules\Assessment\Models\Rubric;
+use App\Modules\Assessment\Policies\EvaluationPolicy;
+use App\Modules\Assessment\Policies\ObservationPolicy;
+use App\Modules\Assessment\Policies\RubricPolicy;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\SchoolGrade;
@@ -42,6 +48,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(SchoolGrade::class, SchoolGradePolicy::class);
         Gate::policy(Group::class, GroupPolicy::class);
         Gate::policy(Project::class, ProjectPolicy::class);
+        Gate::policy(Rubric::class, RubricPolicy::class);
+        Gate::policy(Evaluation::class, EvaluationPolicy::class);
+        Gate::policy(Observation::class, ObservationPolicy::class);
         Gate::before(fn ($user, $ability) => $user->hasRole('super_admin') ? true : null);
 
         Project::observe(ProjectObserver::class);

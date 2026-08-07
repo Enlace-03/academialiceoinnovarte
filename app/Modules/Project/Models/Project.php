@@ -70,4 +70,14 @@ class Project extends Model
     {
         return $this->hasManyThrough(StudentPhaseSchedule::class, Phase::class);
     }
+
+    /**
+     * Conveniencia para el panel de administración: las evidencias esperadas
+     * viven en Phase, no en Project directamente. Hito 2: es el punto de
+     * entrada para gestionar entregas y evaluación por evidencia.
+     */
+    public function expectedEvidences(): HasManyThrough
+    {
+        return $this->hasManyThrough(ExpectedEvidence::class, Phase::class);
+    }
 }

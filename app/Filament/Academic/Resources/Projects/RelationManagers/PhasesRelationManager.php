@@ -2,6 +2,7 @@
 
 namespace App\Filament\Academic\Resources\Projects\RelationManagers;
 
+use App\Modules\Assessment\Models\Rubric;
 use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Project;
 use App\Modules\Project\Models\Resource as ProjectResourceModel;
@@ -132,6 +133,12 @@ class PhasesRelationManager extends RelationManager
                     TextInput::make('alternative_group')
                         ->label('Grupo alternativo')
                         ->helperText('Evidencias con el mismo valor son mutuamente excluyentes (el equipo entrega una, no todas).'),
+
+                    Select::make('rubric_id')
+                        ->label('Rúbrica')
+                        ->options(fn () => Rubric::query()->pluck('name', 'id'))
+                        ->searchable()
+                        ->helperText('Banco de rúbricas reutilizable — la misma rúbrica puede usarse en varios proyectos.'),
                 ])
                 ->collapsible()
                 ->columnSpanFull(),

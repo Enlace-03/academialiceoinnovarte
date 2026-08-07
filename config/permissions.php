@@ -56,8 +56,10 @@ return [
         ],
 
         'Evaluación' => [
+            'rubrics.manage'          => 'Gestionar el banco de rúbricas',
             'submissions.evaluate'    => 'Evaluar entregas con rúbrica',
-            'observations.write'      => 'Escribir observaciones',
+            'observations.write.own'  => 'Escribir observaciones propias',
+            'observations.write.all'  => 'Escribir observaciones de cualquier estudiante',
             'observations.view.all'   => 'Ver observaciones de todos los estudiantes',
         ],
 
@@ -98,7 +100,8 @@ return [
             'teacher-assignments.manage',
             'projects.view.all', 'projects.create', 'projects.update.all',
             'phases.manage', 'resources.manage',
-            'submissions.evaluate', 'observations.write', 'observations.view.all',
+            'rubrics.manage', 'submissions.evaluate',
+            'observations.write.own', 'observations.write.all', 'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all', 'reports.export',
             'forums.moderate',
             'avatar-messages.manage',
@@ -110,6 +113,7 @@ return [
             'institution.groups.manage', 'subjects.view',
             'projects.view.all', 'projects.create', 'projects.update.all',
             'phases.manage', 'resources.manage',
+            'rubrics.manage',
             'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all',
         ],
@@ -124,7 +128,7 @@ return [
             'subjects.view',
             'projects.view.own', 'projects.create', 'projects.update.own',
             'phases.manage', 'resources.manage',
-            'submissions.evaluate', 'observations.write',
+            'rubrics.manage', 'submissions.evaluate', 'observations.write.own',
             'forums.moderate',
         ],
     ],

@@ -5,6 +5,7 @@ namespace App\Filament\Academic\Resources\Projects;
 use App\Filament\Academic\Resources\Projects\Pages\CreateProject;
 use App\Filament\Academic\Resources\Projects\Pages\EditProject;
 use App\Filament\Academic\Resources\Projects\Pages\ListProjects;
+use App\Filament\Academic\Resources\Projects\RelationManagers\ExpectedEvidencesRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\PhasesRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ProjectTeamsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\StudentPhaseSchedulesRelationManager;
@@ -73,6 +74,7 @@ class ProjectResource extends Resource
             PhasesRelationManager::class,
             ProjectTeamsRelationManager::class,
             StudentPhaseSchedulesRelationManager::class,
+            ExpectedEvidencesRelationManager::class,
         ];
     }
 }

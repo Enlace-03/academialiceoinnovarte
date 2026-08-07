@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Modules\Project\Models;
 
+use App\Modules\Assessment\Models\Rubric;
+use App\Modules\Assessment\Models\Submission;
 use Database\Factories\ExpectedEvidenceFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Collection;
@@ -11,6 +13,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -21,7 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * (el estudiante/equipo entrega una, no todas). Si es null, es obligatoria por
  * sí sola, sin alternativa.
  */
-#[Fillable(['phase_id', 'type', 'description', 'is_required', 'alternative_group'])]
+#[Fillable(['phase_id', 'type', 'description', 'is_required', 'alternative_group', 'rubric_id'])]
 class ExpectedEvidence extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
@@ -56,6 +59,16 @@ class ExpectedEvidence extends Model
     public function phase(): BelongsTo
     {
         return $this->belongsTo(Phase::class);
+    }
+
+    public function rubric(): BelongsTo
+    {
+        return $this->belongsTo(Rubric::class);
+    }
+
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(Submission::class);
     }
 
     /**
