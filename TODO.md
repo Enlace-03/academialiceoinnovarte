@@ -12,11 +12,11 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 ## 2. Auditoría de autorización por recurso en `/academia`
 
-**Estado:** pendiente, no urgente.
+**Estado:** patrón establecido con `ProjectPolicy` (Hito 1C) — aplicar el mismo criterio a cada Resource nuevo en ese panel.
 
-**Contexto:** `canAccessPanel()` para el panel `academic` es deliberadamente abierto (cualquier usuario con al menos un rol asignado entra) — la restricción real recae en Policies por recurso. Hoy `/academia` no tiene recursos propios, así que no hay superficie que auditar todavía.
+**Contexto:** `canAccessPanel()` para el panel `academic` sigue siendo deliberadamente abierto (cualquier usuario con al menos un rol asignado entra) — la restricción real recae en Policies por recurso. `ProjectResource` (primer Resource real de `/academia`) fija el patrón a replicar: `viewAny()`/`create()`/`update()` distinguiendo `own` (vía `created_by_user_id`) de `all` (permiso `.all`), y las acciones de gestión de sub-recursos (`managePhases`, `manageResources` en `ProjectPolicy`) no son puertas independientes — exigen además pasar la autorización `update()` sobre el registro padre puntual, no solo tener el permiso global. `ProjectResource::getEloquentQuery()` refuerza el filtro `own` también a nivel de listado, no solo de política por registro.
 
-**Cuándo retomarlo:** obligatorio antes de dar por completo cualquier Resource/Page/Widget nuevo que se construya dentro de `/academia` — cada uno necesita su propia autorización explícita, no heredar el acceso abierto del panel.
+**Cuándo retomarlo:** obligatorio antes de dar por completo cualquier Resource/Page/Widget nuevo que se construya dentro de `/academia` — replicar el mismo criterio (own/all + sub-recursos acoplados a la autorización del padre), no heredar el acceso abierto del panel.
 
 ## 3. Columnas faltantes en `User::$fillable` (vía `#[Fillable(...)]`)
 
@@ -79,6 +79,22 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 **Contexto:** la pestaña "Estudiantes" se beneficiaría de mostrar Grado/Grupo de forma más prominente (ya está como columna, pero es igual de relevante en las otras dos pestañas donde siempre muestra "—"); "Personal" no necesita esa columna en absoluto. Filament permite variar columnas por pestaña, pero eso requeriría separar la definición de columnas de `UsersTable::configure()` y condicionarla al tab activo.
 
 **Cuándo retomarlo:** si el volumen real de columnas por categoría lo justifica (ej. cuando se agreguen columnas específicas de acudientes como "hijos a cargo").
+
+## 10. Inventario de scaffolding de BD pre-creado para módulos futuros (Assessment/Community/Tracking/Prediction/Avatar)
+
+**Estado:** referencia obligatoria antes de especificar cada hito correspondiente — no es deuda técnica, es un mapa para no repetir el conflicto de orden de migraciones del Hito 1C.
+
+**Contexto:** además del módulo `Project` (Hito 1C, con código de aplicación real), existen migraciones de scaffolding inicial con tablas ya creadas pero **cero Models/Actions/Policies** en `app/Modules/` — mismo patrón que causó el conflicto de `cycles` en este hito (esquema adelantado, diseño potencialmente desactualizado frente a decisiones tomadas después).
+
+| Migración | Tablas | Módulo(s) | Notas |
+|---|---|---|---|
+| `2027_01_01_000040_create_assessment_tables.php` | `rubrics`, `rubric_criteria`, `submissions`, `evaluations`, `evaluation_results`, `observations` | Assessment | FK diferida ya activa: `expected_evidences.rubric_id` → `rubrics.id`. `observations.project_id` es nullable. |
+| `2027_01_01_000050_create_community_and_events_tables.php` | `forum_threads`, `forum_posts`, `chat_messages`, `learning_events` (SQL crudo, particionada, sin FKs) | Community + Tracking | `forum_threads.phase_id` es nullable. |
+| `2027_01_01_000060_create_tracking_prediction_avatar_tables.php` | `student_progress`, `student_metrics`, `performance_snapshots`, `predictions`, `risk_alerts`, `avatar_messages`, `avatar_interactions`, `onboarding_steps` | Tracking + Prediction + Avatar | `student_progress.phase_id` y `risk_alerts.project_id` son nullable. |
+
+`Analytics` y `Communication` (notificaciones) no tienen ningún scaffolding — ni siquiera tabla `notifications` — arrancan desde cero.
+
+**Cuándo retomarlo:** al especificar el Hito 2 (Assessment) y sucesivos — verificar el diseño de cada tabla contra las decisiones tomadas hasta ese momento (mismo chequeo que reveló que `projects`/`phases`/etc. estaban desactualizadas frente a la decisión de `Cycle`) *antes* de escribir modelos/Actions encima, no después.
 
 ---
 
