@@ -96,6 +96,14 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** al especificar el Hito 2 (Assessment) y sucesivos — verificar el diseño de cada tabla contra las decisiones tomadas hasta ese momento (mismo chequeo que reveló que `projects`/`phases`/etc. estaban desactualizadas frente a la decisión de `Cycle`) *antes* de escribir modelos/Actions encima, no después.
 
+## 11. Criterio de desempate de `Evaluation::consolidatedLevel()` (Hito 2)
+
+**Estado:** ✅ decisión de diseño tomada y probada — documentada aquí para que no quede solo en el docblock del método.
+
+**Contexto:** el nivel consolidado de una evaluación (insumo que Tracking va a consumir para progreso/boletín, no expuesto en ningún reporte todavía) se calcula como la **moda** de los niveles de sus `EvaluationResult`. Cuando hay empate entre dos o más niveles con el mismo conteo (ej. 2 criterios en "Logro esperado" y 2 en "Logro destacado"), **gana el nivel más bajo** de los empatados — criterio conservador, no el más favorable al estudiante. Cubierto por `ConsolidatedLevelTest::test_a_tie_is_resolved_by_the_lowest_level`.
+
+**Cuándo retomarlo:** si Tracking o el flujo de boletines necesita un criterio distinto (ej. promedio ponderado en vez de moda), es una decisión nueva a tomar en ese hito, no una corrección de esta — este criterio fue elegido específicamente para el cálculo cualitativo por evaluación, no para el consolidado numérico del boletín (fuera de alcance del Hito 2).
+
 ---
 
 ## Notas de infraestructura (resueltas)
