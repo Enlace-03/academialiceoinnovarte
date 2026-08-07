@@ -48,6 +48,11 @@ return new class extends Migration
         });
 
         // learning_events: creada con SQL crudo por el particionado.
+        // UNIX_TIMESTAMP(occurred_at) es la única función de partición admitida
+        // por MySQL/MariaDB sobre una columna TIMESTAMP (TO_DAYS/YEAR exigen
+        // DATE/DATETIME) — validado en vivo contra la MariaDB 10.11 real de
+        // producción (creación de partición + REORGANIZE PARTITION) antes de
+        // aplicar esta migración en ningún ambiente.
         DB::statement(<<<'SQL'
             CREATE TABLE learning_events (
                 id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
@@ -60,9 +65,12 @@ return new class extends Migration
                 KEY idx_student_project_time (student_id, project_id, occurred_at),
                 KEY idx_type_time (event_type, occurred_at)
             ) ENGINE=InnoDB ROW_FORMAT=DYNAMIC
+            PARTITION BY RANGE (UNIX_TIMESTAMP(occurred_at)) (
+                PARTITION pmax VALUES LESS THAN MAXVALUE
+            )
         SQL);
         // El comando programado events:archive debe crear la partición del mes siguiente
-        // (REORGANIZE PARTITION pmax) y archivar particiones > 12 meses.
+        // (REORGANIZE PARTITION pmax INTO (...)) y archivar particiones > 12 meses.
     }
 
     public function down(): void
