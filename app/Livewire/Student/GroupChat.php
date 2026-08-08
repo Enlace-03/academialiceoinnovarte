@@ -20,6 +20,21 @@ use Livewire\Component;
  *
  * wire:poll en la vista simula "en vivo" sin broadcasting (el proyecto no
  * tiene Redis/Echo — ver CLAUDE.md).
+ *
+ * Defensa en profundidad (mismo patrón que ForumThreadShow::mount() con el
+ * chequeo de {project}/{thread}): mount() valida hasRole('student') por sí
+ * mismo, ANTES de confiar en auth()->user()->group. Sin este chequeo, el
+ * componente depende de dos capas externas para no exponer el chat de un
+ * grupo real a personal: (1) el middleware role:student de la ruta, y (2)
+ * que group_id nunca quede no-nulo en una cuenta staff. Esa segunda capa es
+ * GroupRequiresStudentRole (app/Rules/GroupRequiresStudentRole.php) — una
+ * regla de VALIDACIÓN atada solo al formulario UserForm de Filament, no un
+ * constraint de BD ni una regla del modelo. Si algún día alguien escribe
+ * group_id por otro camino (tinker, un seeder, una Action futura) sin pasar
+ * por ese formulario, o si la ruta pierde role:student en un refactor,
+ * ChatMessagePolicy::create() ya autoriza a cualquier staff sin mirar el
+ * group_id (ver docblock de esa Policy) — este chequeo es lo único que no
+ * depende de ninguna de esas dos capas. Ver TODO.md #18.
  */
 #[Layout('layouts.portal')]
 class GroupChat extends Component
@@ -31,6 +46,8 @@ class GroupChat extends Component
 
     public function mount(): void
     {
+        abort_unless(auth()->user()->hasRole('student'), 403);
+
         $this->group = auth()->user()->group;
 
         if ($this->group !== null) {

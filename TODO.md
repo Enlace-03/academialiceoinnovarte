@@ -62,6 +62,8 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** obligatorio reforzar (ej. mover la validación a un observer/listener del propio `parent_student`, o exigir el consentimiento antes de cualquier inserción, no solo desde Filament) si se automatiza la carga masiva de estudiantes/acudientes.
 
+**Mismo patrón que #18** (regla de integridad que solo vive en un formulario Filament, no en el modelo/BD) — este es el primer caso identificado, `GroupRequiresStudentRole` (Hito 3b-1) es el segundo.
+
 ## 8. Ocultar roles "más altos" en la asignación de roles/permisos
 
 **Estado:** no implementado, decisión explícita de dejarlo así por ahora.
@@ -165,6 +167,23 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 **Contexto:** `RegisterSubmissionAction` ya existe y ya soporta archivo (`file_disk`/`file_path`/`original_filename`) o texto (`text_content`) — el mecanismo de dominio está listo. Lo que falta es la pantalla del lado del estudiante: un formulario en `ProjectShow` (o un componente propio) que, sobre una `ExpectedEvidence` en estado "pendiente", permita al propio estudiante subir su evidencia y dispare la misma Action, en vez de que el docente la registre a mano.
 
 **Cuándo retomarlo:** siguiente paso natural del portal de estudiante — requiere decidir política de autorización para `RegisterSubmissionAction` cuando el actor es el propio estudiante (hoy ningún llamador que no sea Filament/personal existe), y si se permite corregir una entrega ya evaluada como "devuelta" (`status: returned`) desde el propio portal o solo el docente puede reabrir ese estado.
+
+## 18. Patrón: reglas de integridad que solo viven en un formulario Filament, no en el modelo/BD (Hito 3b-1)
+
+**Estado:** patrón identificado y nombrado — un caso ya mitigado con una segunda capa independiente (`GroupChat`), otro (#7) todavía sin mitigar. Se documenta como patrón, no como hallazgo aislado, para reconocer más rápido una tercera instancia cuando aparezca.
+
+**Contexto:** dos casos ya confirmados en el proyecto de la misma forma de riesgo — una combinación de datos que debería ser inválida (`group_id` no nulo sin rol `student`; un `parent_student` sin `data_treatment_consent`) solo se impide en el ÚNICO formulario Filament pensado para crearla, no en el modelo ni con un constraint de base de datos:
+
+| Caso | Regla | Único punto donde se aplica | Nada la aplica en |
+|---|---|---|---|
+| `users.group_id` requiere rol `student` | `App\Rules\GroupRequiresStudentRole` | `UserForm` (Admin), campo `group_id` | `tinker`, seeders, cualquier Action futura, un cambio de rol posterior que no pase por ese formulario |
+| Todo `parent_student` requiere `data_treatment_consent` (#7) | `RecordDataTreatmentConsentAction` | Attach action de `GuardiansRelationManager` | seeder, carga masiva Excel/CSV, `tinker` |
+
+En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequiresStudentRole` dice explícitamente *"Integrity rule (application layer, not DB)"*). El riesgo no es que la regla esté mal escrita — es que solo hay **un** punto de entrada validado, y el dato en sí (`group_id`, `parent_student`) es alcanzable por cualquier otro camino de escritura sin pasar por él.
+
+**Primera mitigación de este patrón, hecha en este hito:** `GroupChat::mount()` (Hito 3b-1) ya no confía en que `group_id` de una cuenta staff sea siempre `null` — agrega su propio `abort_unless(auth()->user()->hasRole('student'), 403)` como defensa en profundidad, independiente de si `GroupRequiresStudentRole` sigue siendo el único guardián de esa invariante y de si la ruta conserva el middleware `role:student`. Es la respuesta puntual para el consumidor de datos (`GroupChat`), no una solución de la causa raíz (la regla sigue viviendo solo en `UserForm`).
+
+**Cuándo retomarlo:** si aparece una tercera instancia de este patrón, tratarla como una señal de que vale la pena una solución genérica (ej. mover estas reglas a un `Observer` del modelo, o agregar constraints reales de base de datos donde sea posible) en vez de seguir mitigando caso por caso en cada consumidor.
 
 ---
 

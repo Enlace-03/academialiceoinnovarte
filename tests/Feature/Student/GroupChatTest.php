@@ -9,6 +9,7 @@ use App\Modules\Institution\Models\Group;
 use Database\Seeders\RoleLevelSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Route;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -111,6 +112,28 @@ class GroupChatTest extends TestCase
 
         $this->actingAs($parent)
             ->get(route('student.chat'))
+            ->assertForbidden();
+    }
+
+    /**
+     * Rama B del hallazgo documentado en TODO.md #18: group_id no debería
+     * quedar no-nulo en una cuenta staff (GroupRequiresStudentRole solo lo
+     * impide desde UserForm), y ChatMessagePolicy::create() autorizaría a
+     * cualquier staff sin mirar ese group_id. Registramos una ruta de
+     * prueba SIN role:student a propósito -- simula exactamente el
+     * escenario "¿y si el middleware de la ruta real se quitara algún día?"
+     * -- para probar que GroupChat::mount() bloquea por sí mismo, sin
+     * depender de esa ruta ni del middleware.
+     */
+    public function test_mount_blocks_a_staff_user_with_a_non_null_group_id_even_without_the_route_middleware(): void
+    {
+        Route::get('/ruta-de-prueba-sin-role-student', GroupChat::class)->middleware('auth');
+
+        $group = Group::factory()->create();
+        $teacher = User::factory()->create(['group_id' => $group->id])->assignRole('teacher');
+
+        $this->actingAs($teacher)
+            ->get('/ruta-de-prueba-sin-role-student')
             ->assertForbidden();
     }
 }
