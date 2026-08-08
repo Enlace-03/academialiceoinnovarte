@@ -69,10 +69,6 @@ return [
             'reports.export'               => 'Exportar reportes',
         ],
 
-        'Comunidad' => [
-            'forums.moderate' => 'Moderar foros y chat',
-        ],
-
         'Sistema' => [
             'settings.manage'       => 'Gestionar configuración del sistema',
             'activity-logs.view'    => 'Ver registros de auditoría',
@@ -103,7 +99,6 @@ return [
             'rubrics.manage', 'submissions.evaluate',
             'observations.write.own', 'observations.write.all', 'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all', 'reports.export',
-            'forums.moderate',
             'avatar-messages.manage',
         ],
 
@@ -129,7 +124,6 @@ return [
             'projects.view.own', 'projects.create', 'projects.update.own',
             'phases.manage', 'resources.manage',
             'rubrics.manage', 'submissions.evaluate', 'observations.write.own',
-            'forums.moderate',
         ],
     ],
 
