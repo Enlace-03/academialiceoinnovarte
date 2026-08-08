@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Assessment\Models;
 
 use App\Models\User;
+use App\Modules\Community\Models\ForumPost;
 use App\Modules\Project\Models\ExpectedEvidence;
 use Database\Factories\SubmissionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -26,7 +27,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 #[Fillable([
     'expected_evidence_id', 'student_id', 'text_content', 'status', 'submitted_at',
-    'file_disk', 'file_path', 'original_filename',
+    'file_disk', 'file_path', 'original_filename', 'forum_post_id',
 ])]
 class Submission extends Model
 {
@@ -65,5 +66,10 @@ class Submission extends Model
     public function evaluations(): HasMany
     {
         return $this->hasMany(Evaluation::class);
+    }
+
+    public function forumPost(): BelongsTo
+    {
+        return $this->belongsTo(ForumPost::class);
     }
 }

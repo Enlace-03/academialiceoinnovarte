@@ -142,6 +142,22 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** si el volumen de solicitudes de recuperación manual se vuelve una carga operativa real para secretaría, evaluar un flujo de "olvidé mi contraseña" por correo — hoy no se justifica por el tamaño de la población (~200 estudiantes).
 
+## 15. Acceso de docente al chat de grupo: aproximación pragmática sin `teacher_assignments` real (Hito 3)
+
+**Estado:** decisión consciente, documentada como imprecisa a propósito — no es un bug, es la mejor opción disponible sin resucitar `teacher_assignments`.
+
+**Contexto:** `chat_messages` se aísla por `group_id`, sin `project_id` ni ninguna relación de propiedad tipo `ProjectPolicy` (own/all). La tabla `teacher_assignments` (`teacher_id`, `subject_id`, `group_id`) existe migrada desde el Hito 1 pero sigue siendo scaffolding huérfano — sin Model, sin Actions, sin datos reales (ver punto 10) — así que no hay forma precisa hoy de saber "cuáles son los grupos de este docente". `ChatMessagePolicy::view()`/`create()` optaron por la aproximación más simple y explícita: **cualquier usuario de categoría staff puede ver/enviar mensajes en el chat de cualquier grupo**, sin acotar por proyecto ni ciclo propio. Es más abierto de lo ideal, pero acotado a personal del colegio (nunca a estudiantes ni acudientes), y la única acción realmente sensible — `hide()` (ocultar/moderar) — sí queda estrictamente restringida al permiso `chat.moderate` (solo rector y coordinator, nunca teacher).
+
+**Cuándo retomarlo:** cuando `teacher_assignments` se implemente de verdad (Model + Actions + UI de asignación), reescribir `ChatMessagePolicy::view()`/`create()` para exigir que el docente tenga una asignación real sobre el grupo del mensaje, en vez de la puerta abierta a cualquier staff.
+
+## 16. `chat_messages` sin segmentación por proyecto (Hito 3)
+
+**Estado:** riesgo conocido, aceptado — no bloquea el resto del módulo Community.
+
+**Contexto:** a diferencia de `forum_threads`/`forum_posts` (que sí cuelgan de `project_id` y por tanto heredan el aislamiento por ciclo vía `ProjectPolicy`/`User::canAccessProject()`), `chat_messages` solo tiene `group_id` — es el chat general del grupo, no de un proyecto puntual. Esto es una decisión de diseño ya confirmada (un grupo puede tener chat activo aunque no haya un proyecto ABP corriendo en ese momento), no un descuido, pero significa que el chat no distingue "de qué proyecto están hablando" si el grupo tiene varios proyectos a lo largo del año.
+
+**Cuándo retomarlo:** solo si en el futuro se necesita separar el chat por proyecto (ej. un grupo con dos proyectos simultáneos en distintas materias) — hoy (un proyecto por ciclo por semestre) no hay caso de uso real que lo requiera.
+
 ---
 
 ## Notas de infraestructura (resueltas)

@@ -9,6 +9,12 @@ use App\Modules\Assessment\Models\Rubric;
 use App\Modules\Assessment\Policies\EvaluationPolicy;
 use App\Modules\Assessment\Policies\ObservationPolicy;
 use App\Modules\Assessment\Policies\RubricPolicy;
+use App\Modules\Community\Models\ChatMessage;
+use App\Modules\Community\Models\ForumPost;
+use App\Modules\Community\Models\ForumThread;
+use App\Modules\Community\Policies\ChatMessagePolicy;
+use App\Modules\Community\Policies\ForumPostPolicy;
+use App\Modules\Community\Policies\ForumThreadPolicy;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\SchoolGrade;
@@ -51,6 +57,9 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Rubric::class, RubricPolicy::class);
         Gate::policy(Evaluation::class, EvaluationPolicy::class);
         Gate::policy(Observation::class, ObservationPolicy::class);
+        Gate::policy(ForumThread::class, ForumThreadPolicy::class);
+        Gate::policy(ForumPost::class, ForumPostPolicy::class);
+        Gate::policy(ChatMessage::class, ChatMessagePolicy::class);
         Gate::before(fn ($user, $ability) => $user->hasRole('super_admin') ? true : null);
 
         Project::observe(ProjectObserver::class);

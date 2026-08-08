@@ -6,6 +6,7 @@ use App\Models\Concerns\HasDelegationCeiling;
 use App\Modules\Identity\Models\ParentStudent;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\SchoolGrade;
+use App\Modules\Project\Models\Project;
 use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -66,6 +67,19 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Un estudiante accede a un proyecto si su grado (school_grade) pertenece
+     * al mismo ciclo que el proyecto — un proyecto es "del ciclo", no de un
+     * grupo puntual, así que todos los grados de ese ciclo comparten acceso.
+     * Sin grado asignado, no hay acceso (fail-closed). Reutilizable por
+     * Community (foro/chat) y por cualquier otra pantalla de estudiante.
+     */
+    public function canAccessProject(Project $project): bool
+    {
+        return $this->schoolGrade !== null
+            && $this->schoolGrade->cycle_id === $project->cycle_id;
+    }
+
+    /**
      * Panel-level access gate. 'admin' is restricted to super_admin and to
      * anyone holding a permission whose name starts with one of the prefixes
      * in config('permissions.admin_panel_permission_prefixes') (users.* /
@@ -85,9 +99,20 @@ class User extends Authenticatable implements FilamentUser
                 || $this->hasAnyPermissionStartingWith(
                     config('permissions.admin_panel_permission_prefixes', [])
                 ),
-            'academic' => $this->hasAnyRoleInCategory('staff'),
+            'academic' => $this->isStaff(),
             default => false,
         };
+    }
+
+    /**
+     * Personal (cualquier rol de categoría "staff"): rector, coordinator,
+     * secretary, teacher, super_admin. Usado por Policies que necesitan una
+     * puerta de "es alguien del colegio" antes de decidir con más precisión
+     * (ej. ChatMessagePolicy, ante la ausencia de teacher_assignments real).
+     */
+    public function isStaff(): bool
+    {
+        return $this->hasAnyRoleInCategory('staff');
     }
 
     protected function hasAnyPermissionStartingWith(array $prefixes): bool

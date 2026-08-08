@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Institution\Models;
 
 use App\Models\User;
+use App\Modules\Community\Models\ChatMessage;
 use Database\Factories\GroupFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -42,5 +43,10 @@ class Group extends Model
     public function users(): HasMany
     {
         return $this->hasMany(User::class, 'group_id');
+    }
+
+    public function chatMessages(): HasMany
+    {
+        return $this->hasMany(ChatMessage::class);
     }
 }

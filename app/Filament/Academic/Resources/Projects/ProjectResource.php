@@ -6,6 +6,8 @@ use App\Filament\Academic\Resources\Projects\Pages\CreateProject;
 use App\Filament\Academic\Resources\Projects\Pages\EditProject;
 use App\Filament\Academic\Resources\Projects\Pages\ListProjects;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ExpectedEvidencesRelationManager;
+use App\Filament\Academic\Resources\Projects\RelationManagers\ForumPostsRelationManager;
+use App\Filament\Academic\Resources\Projects\RelationManagers\ForumThreadsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\PhasesRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ProjectTeamsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\StudentPhaseSchedulesRelationManager;
@@ -75,6 +77,8 @@ class ProjectResource extends Resource
             ProjectTeamsRelationManager::class,
             StudentPhaseSchedulesRelationManager::class,
             ExpectedEvidencesRelationManager::class,
+            ForumThreadsRelationManager::class,
+            ForumPostsRelationManager::class,
         ];
     }
 }

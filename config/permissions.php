@@ -69,6 +69,10 @@ return [
             'reports.export'               => 'Exportar reportes',
         ],
 
+        'Comunidad' => [
+            'chat.moderate' => 'Ocultar mensajes de chat de cualquier grupo',
+        ],
+
         'Sistema' => [
             'settings.manage'       => 'Gestionar configuración del sistema',
             'activity-logs.view'    => 'Ver registros de auditoría',
@@ -100,6 +104,7 @@ return [
             'observations.write.own', 'observations.write.all', 'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all', 'reports.export',
             'avatar-messages.manage',
+            'chat.moderate',
         ],
 
         'coordinator' => [
@@ -111,6 +116,7 @@ return [
             'rubrics.manage',
             'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all',
+            'chat.moderate',
         ],
 
         'secretary' => [

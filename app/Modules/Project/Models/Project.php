@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Modules\Project\Models;
 
 use App\Models\User;
+use App\Modules\Community\Models\ForumPost;
+use App\Modules\Community\Models\ForumThread;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\ThinkingField;
 use Database\Factories\ProjectFactory;
@@ -60,6 +62,21 @@ class Project extends Model
     public function teams(): HasMany
     {
         return $this->hasMany(ProjectTeam::class);
+    }
+
+    public function forumThreads(): HasMany
+    {
+        return $this->hasMany(ForumThread::class);
+    }
+
+    /**
+     * Vista plana de participación entre todos los hilos del proyecto —
+     * mismo patrón que expectedEvidences() (hasManyThrough soporta un solo
+     * intermedio; ForumPost no pertenece a Project directamente).
+     */
+    public function forumPosts(): HasManyThrough
+    {
+        return $this->hasManyThrough(ForumPost::class, ForumThread::class);
     }
 
     /**
