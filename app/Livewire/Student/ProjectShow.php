@@ -19,6 +19,11 @@ use Livewire\Component;
  * confirmada del Hito 3b-1): se autoriza una sola vez a nivel de Project
  * (mount) y se consultan los hijos directamente, mismo criterio que ya usan
  * ForumThreadPolicy/ForumPostPolicy.
+ *
+ * hasRole('student') explícito (Hito 3b-2, mismo patrón que GroupChat):
+ * válido sin ambigüedad porque el mecanismo de entrega de sesión es
+ * auth-switch real (Auth::loginUsingId) -- auth()->user() durante una
+ * sesión entregada ES el estudiante, no hay "delegación" que distinguir.
  */
 #[Layout('layouts.portal')]
 class ProjectShow extends Component
@@ -27,6 +32,8 @@ class ProjectShow extends Component
 
     public function mount(Project $project): void
     {
+        abort_unless(auth()->user()->hasRole('student'), 403);
+
         $this->authorize('view', $project);
 
         $this->project = $project;

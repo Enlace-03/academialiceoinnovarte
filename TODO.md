@@ -152,6 +152,8 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** cuando `teacher_assignments` se implemente de verdad (Model + Actions + UI de asignación), reescribir `ChatMessagePolicy::view()`/`create()` para exigir que el docente tenga una asignación real sobre el grupo del mensaje, en vez de la puerta abierta a cualquier staff.
 
+**Consumidor nuevo de este mismo riesgo (Hito 3b-2):** la acción "Entregar sesión" (`GroupsTable::grantSessionAction()`, panel `/academia`) reutiliza exactamente este criterio (`Gate::allows('create', [ChatMessage::class, $group])`) para decidir quién puede entregar la sesión de un grupo — a propósito, para no crear un permiso paralelo. Efecto directo: **cualquier docente puede entregar sesión en cualquier grupo, no solo el suyo**, mismo riesgo ya conocido de este punto, no uno nuevo. Cuando `teacher_assignments` se resuelva de verdad, la corrección beneficia a ambos consumidores a la vez.
+
 ## 16. `chat_messages` sin segmentación por proyecto (Hito 3)
 
 **Estado:** riesgo conocido, aceptado — no bloquea el resto del módulo Community.
@@ -184,6 +186,14 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 **Primera mitigación de este patrón, hecha en este hito:** `GroupChat::mount()` (Hito 3b-1) ya no confía en que `group_id` de una cuenta staff sea siempre `null` — agrega su propio `abort_unless(auth()->user()->hasRole('student'), 403)` como defensa en profundidad, independiente de si `GroupRequiresStudentRole` sigue siendo el único guardián de esa invariante y de si la ruta conserva el middleware `role:student`. Es la respuesta puntual para el consumidor de datos (`GroupChat`), no una solución de la causa raíz (la regla sigue viviendo solo en `UserForm`).
 
 **Cuándo retomarlo:** si aparece una tercera instancia de este patrón, tratarla como una señal de que vale la pena una solución genérica (ej. mover estas reglas a un `Observer` del modelo, o agregar constraints reales de base de datos donde sea posible) en vez de seguir mitigando caso por caso en cada consumidor.
+
+## 19. UI del portal de estudiante inapropiada para primaria/transición (Hito 3b-2)
+
+**Estado:** stopgap consciente — se reutiliza tal cual la UI del Hito 3b-1, construida y pensada para ciclos 3-4 (6°-9°), como destino de una sesión entregada a un estudiante de ciclos 1-2 (transición-5°).
+
+**Contexto:** el Hito 3b-2 (entrega de sesión docente→estudiante) redirige, tras `Auth::loginUsingId()`, a `/mis-proyectos` — las mismas pantallas de `MyProjects`/`ProjectShow`/`ForumThreadShow`/`GroupChat` que ya existían, con texto denso, sin avatar, sin iconografía grande, pensadas para un adolescente que lee bien, no para un niño de transición o primero. El propio skill `livewire-components` ya documenta la tabla "UX: reglas para primaria vs secundaria" (avatar visible y grande, máx. 3 opciones por pantalla, rúbrica solo color/ícono, sin porcentajes) — nada de eso está implementado todavía en ninguna pantalla del portal, ni de estudiante de ciclos 3-4 ni, ahora, de ciclos 1-2.
+
+**Cuándo retomarlo:** hito de diseño aparte, no incremental sobre 3b-1/3b-2 — requiere decidir el lenguaje visual completo (iconos, tipografía, narración de avatar) antes de tocar las pantallas existentes, en vez de ir parcheando cada componente por separado.
 
 ---
 

@@ -6,7 +6,13 @@ use App\Livewire\Student\ForumThreadShow;
 use App\Livewire\Student\GroupChat;
 use App\Livewire\Student\MyProjects;
 use App\Livewire\Student\ProjectShow;
+use App\Models\User;
+use App\Modules\Community\Models\ChatMessage;
+use App\Modules\Identity\Actions\EndStudentSessionAction;
+use App\Modules\Identity\Actions\GrantStudentSessionAction;
+use App\Modules\Institution\Models\Group;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 
 // Panel fuera de Filament (Hito 3b-0): login mínimo compartido, guard web
@@ -17,7 +23,21 @@ use Illuminate\Support\Facades\Route;
 // distinto.
 Route::get('/login', Login::class)->middleware('guest')->name('login');
 
+/**
+ * Mismo botón, mismo endpoint, para cierre normal (cuenta propia) y para
+ * "Terminar clase" (sesión entregada, Hito 3b-2) — la vista decide el texto
+ * según session('active_grant_id'); esta ruta solo necesita, además del
+ * logout de siempre, cerrar la entrega activa si la hay (ended_at = now()),
+ * ANTES de invalidar la sesión (session('active_grant_id') deja de existir
+ * después de invalidate()).
+ */
 Route::post('/logout', function () {
+    $grantId = session('active_grant_id');
+
+    if ($grantId !== null) {
+        app(EndStudentSessionAction::class)->execute($grantId);
+    }
+
     Auth::logout();
     request()->session()->invalidate();
     request()->session()->regenerateToken();
@@ -25,7 +45,45 @@ Route::post('/logout', function () {
     return redirect()->route('login');
 })->middleware('auth')->name('logout');
 
-Route::get('/', PortalHome::class)->middleware('auth')->name('portal.home');
+/**
+ * "Entregar sesión" (Hito 3b-2): a propósito una página plana con un
+ * <form> HTML normal, NADA de Livewire/Filament en el paso que cambia de
+ * identidad. Probado en Chrome de forma reproducible: al hacer el
+ * auth-switch (Auth::loginUsingId) desde dentro de un action() de Filament
+ * -- incluso separándolo en dos pasos con successRedirectUrl() -- el
+ * navegador queda "mid-navigation" varios segundos y termina de vuelta en
+ * /academia con 403, en vez de aterrizar en /mis-proyectos. El servidor SÍ
+ * ejecuta todo correctamente (la entrega queda registrada, el auth sí
+ * cambia) — el problema es puramente el manejo de la redirección en el
+ * cliente cuando cruza de la SPA de Filament hacia una app Livewire
+ * completamente distinta a mitad de cambio de identidad. Un <form
+ * method="POST"> normal, con una respuesta redirect() de Laravel corriente,
+ * no tiene ese problema: es exactamente lo mismo que ya hace /logout.
+ */
+Route::get('/academia/grupos/{group}/entregar-sesion', function (Group $group) {
+    Gate::authorize('create', [ChatMessage::class, $group]);
+
+    $students = User::role('student')->where('group_id', $group->id)->orderBy('name')->get(['id', 'name']);
+
+    return view('academic.grant-session', ['group' => $group, 'students' => $students]);
+})->middleware('auth')->name('academic.group-sessions.create');
+
+Route::post('/academia/grupos/{group}/entregar-sesion', function (Group $group) {
+    Gate::authorize('create', [ChatMessage::class, $group]);
+
+    $data = request()->validate(['student_id' => ['required', 'integer', 'exists:users,id']]);
+    $student = User::findOrFail($data['student_id']);
+
+    abort_unless($student->hasRole('student') && $student->group_id === $group->id, 422);
+
+    app(GrantStudentSessionAction::class)->execute(
+        auth()->user(), $student, $group, request()->ip(), request()->userAgent()
+    );
+
+    return redirect()->route('student.projects.index');
+})->middleware('auth')->name('academic.group-sessions.store');
+
+Route::get('/', PortalHome::class)->middleware(['auth', 'expire-delivered-session'])->name('portal.home');
 
 /**
  * Portal de estudiante (Hito 3b-1). role:student, no parent — el padre se
@@ -33,8 +91,11 @@ Route::get('/', PortalHome::class)->middleware('auth')->name('portal.home');
  * dashboard (fuera de alcance de este hito). Los modelos se resuelven por
  * la columna 'uuid' (regla absoluta #5: nunca IDs autoincrementales en URLs
  * de estudiantes), no por la 'id' interna.
+ *
+ * expire-delivered-session (Hito 3b-2): no-op para un login normal de
+ * estudiante/padre -- solo actúa si session('active_grant_id') existe.
  */
-Route::middleware(['auth', 'role:student'])->group(function () {
+Route::middleware(['auth', 'expire-delivered-session', 'role:student'])->group(function () {
     Route::get('/mis-proyectos', MyProjects::class)->name('student.projects.index');
     Route::get('/mis-proyectos/{project:uuid}', ProjectShow::class)->name('student.projects.show');
     /**

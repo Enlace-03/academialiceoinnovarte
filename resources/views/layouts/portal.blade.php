@@ -25,7 +25,7 @@
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf
                     <button type="submit" class="text-sm text-red-600 hover:underline">
-                        Cerrar sesión
+                        {{ session('active_grant_id') ? 'Terminar clase' : 'Cerrar sesión' }}
                     </button>
                 </form>
             </div>

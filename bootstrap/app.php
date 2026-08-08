@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\ExpireDeliveredStudentSession;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -19,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // estudiante (Hito 3b-1).
         $middleware->alias([
             'role' => RoleMiddleware::class,
+            'expire-delivered-session' => ExpireDeliveredStudentSession::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

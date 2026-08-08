@@ -23,6 +23,11 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  *
  * El conteo de likes es público para quien ve el post; la lista de quién dio
  * like NUNCA se carga aquí (ForumPostPolicy::viewLikers es solo personal).
+ *
+ * hasRole('student') explícito (Hito 3b-2, mismo patrón que GroupChat):
+ * válido sin ambigüedad porque el mecanismo de entrega de sesión es
+ * auth-switch real (Auth::loginUsingId) -- auth()->user() durante una
+ * sesión entregada ES el estudiante, no hay "delegación" que distinguir.
  */
 #[Layout('layouts.portal')]
 class ForumThreadShow extends Component
@@ -41,6 +46,8 @@ class ForumThreadShow extends Component
 
     public function mount(Project $project, ForumThread $thread): void
     {
+        abort_unless(auth()->user()->hasRole('student'), 403);
+
         $this->authorize('view', $thread);
 
         if ($thread->project_id !== $project->id) {
