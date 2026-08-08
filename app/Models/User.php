@@ -71,9 +71,12 @@ class User extends Authenticatable implements FilamentUser
      * in config('permissions.admin_panel_permission_prefixes') (users.* /
      * institution.* today). Checked by prefix, not by role name, so a future
      * role with those permissions needs no change here. If the config is
-     * empty or missing, only super_admin passes (fail-closed). 'academic' is
-     * open to any user with at least one role assigned; per-resource Policies
-     * do the real restriction there once resources exist.
+     * empty or missing, only super_admin passes (fail-closed). 'academic'
+     * requires at least one role categorized as "staff" in
+     * config('permissions.role_categories') — student/parent (category
+     * "identity") are fail-closed out, since they now have their own real
+     * login path at "/" (Hito 3b-0). Per-resource Policies still do the real
+     * restriction within the panel for staff roles.
      */
     public function canAccessPanel(Panel $panel): bool
     {
@@ -82,7 +85,7 @@ class User extends Authenticatable implements FilamentUser
                 || $this->hasAnyPermissionStartingWith(
                     config('permissions.admin_panel_permission_prefixes', [])
                 ),
-            'academic' => $this->roles()->exists(),
+            'academic' => $this->hasAnyRoleInCategory('staff'),
             default => false,
         };
     }
@@ -92,5 +95,14 @@ class User extends Authenticatable implements FilamentUser
         return $this->getAllPermissions()
             ->pluck('name')
             ->contains(fn (string $permission): bool => Str::startsWith($permission, $prefixes));
+    }
+
+    protected function hasAnyRoleInCategory(string $category): bool
+    {
+        $rolesInCategory = collect(config('permissions.role_categories', []))
+            ->filter(fn (string $roleCategory) => $roleCategory === $category)
+            ->keys();
+
+        return $this->roles()->whereIn('name', $rolesInCategory)->exists();
     }
 }

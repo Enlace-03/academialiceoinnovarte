@@ -124,6 +124,24 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** cuando la rectora confirme la licencia permanente de Google Workspace for Education. En ese momento, preparar un instructivo paso a paso para que ella misma configure la cuenta de servicio y la delegación desde la consola real — no delegarlo a exploración automatizada.
 
+## 13. Acudiente actuando en nombre de un estudiante de ciclos 1-2 (transición-5°)
+
+**Estado:** diseño pendiente, explícitamente fuera de alcance del Hito 3b-0.
+
+**Contexto:** el Hito 3b-0 solo da cuenta propia (login) a estudiantes de ciclos 3-4 (6°-9°). Para ciclos 1-2, es el acudiente quien se autentica con su propia cuenta y accedería a la vista del hijo en su nombre — no se construyó ningún flujo alterno sin contraseña (PIN, selección de avatar) para que el estudiante pequeño entre directamente; eso queda fuera de alcance a propósito. Las relaciones `User::children()`/`User::guardians()` ya existen y están probadas, y son la base necesaria para resolver esto — no se requiere ningún cambio de esquema para empezar el diseño.
+
+**Pregunta de diseño sin resolver:** cuando un acudiente actúa en nombre de un hijo pequeño (por ejemplo, publica en un foro o marca una entrega como leída), ¿la participación se atribuye al acudiente, al estudiante, o se registra de alguna forma híbrida (ej. `learning_events` con un campo "actuó en nombre de")? Esto afecta directamente el cálculo de la barra de avance y cualquier métrica de participación individual del estudiante.
+
+**Cuándo retomarlo:** al especificar el Hito 3b (portal de estudiante), como parte del diseño de la vista de acudiente — antes de construir cualquier pantalla real que registre participación en nombre de un hijo.
+
+## 14. Sin recuperación de cuenta autoservicio (Hito 3b-0)
+
+**Estado:** decisión explícita — no se construyó "olvidé mi contraseña" ni ningún flujo de auto-registro.
+
+**Contexto:** el login mínimo de `/` (`app/Livewire/Shared/Login.php`) no tiene ningún camino de recuperación de contraseña ni de registro — coherente con la regla absoluta de no self-signup del proyecto. La única vía de recuperación cuando un estudiante o acudiente olvida su contraseña es intervención manual de secretaría desde `/admin` (editar el usuario y fijar una contraseña nueva).
+
+**Cuándo retomarlo:** si el volumen de solicitudes de recuperación manual se vuelve una carga operativa real para secretaría, evaluar un flujo de "olvidé mi contraseña" por correo — hoy no se justifica por el tamaño de la población (~200 estudiantes).
+
 ---
 
 ## Notas de infraestructura (resueltas)

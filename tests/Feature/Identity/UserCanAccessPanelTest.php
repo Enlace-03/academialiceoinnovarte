@@ -89,18 +89,18 @@ class UserCanAccessPanelTest extends TestCase
         $this->assertTrue($user->canAccessPanel($this->panel('academic')));
     }
 
-    public function test_student_can_access_academic_panel(): void
+    public function test_student_cannot_access_academic_panel(): void
     {
         $user = User::factory()->create()->assignRole('student');
 
-        $this->assertTrue($user->canAccessPanel($this->panel('academic')));
+        $this->assertFalse($user->canAccessPanel($this->panel('academic')));
     }
 
-    public function test_parent_can_access_academic_panel(): void
+    public function test_parent_cannot_access_academic_panel(): void
     {
         $user = User::factory()->create()->assignRole('parent');
 
-        $this->assertTrue($user->canAccessPanel($this->panel('academic')));
+        $this->assertFalse($user->canAccessPanel($this->panel('academic')));
     }
 
     public function test_user_with_individual_users_permission_but_no_staff_role_can_access_admin_panel(): void
