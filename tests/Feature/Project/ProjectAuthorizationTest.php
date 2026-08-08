@@ -3,6 +3,8 @@
 namespace Tests\Feature\Project;
 
 use App\Models\User;
+use App\Modules\Institution\Models\Cycle;
+use App\Modules\Institution\Models\SchoolGrade;
 use App\Modules\Project\Models\Project;
 use Database\Seeders\RoleLevelSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -127,6 +129,40 @@ class ProjectAuthorizationTest extends TestCase
 
         $this->assertTrue($teacher->hasPermissionTo('resources.manage'));
         $this->assertFalse($teacher->can('manageResources', $otherProject));
+    }
+
+    /**
+     * Hito 3b-1: student no tiene projects.view.all ni .own (son permisos de
+     * personal, nunca de un rol fijo) — la tercera rama de ProjectPolicy::view
+     * lo autoriza vía canAccessProject() (mismo ciclo que el proyecto).
+     */
+    public function test_student_can_view_project_in_own_cycle(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $project = Project::factory()->create(['cycle_id' => $cycle->id]);
+
+        $this->assertTrue($student->can('view', $project));
+    }
+
+    public function test_student_cannot_view_project_in_other_cycle(): void
+    {
+        $ownCycle = Cycle::factory()->create();
+        $otherCycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $ownCycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $project = Project::factory()->create(['cycle_id' => $otherCycle->id]);
+
+        $this->assertFalse($student->can('view', $project));
+    }
+
+    public function test_student_without_school_grade_cannot_view_any_project(): void
+    {
+        $student = User::factory()->create(['school_grade_id' => null])->assignRole('student');
+        $project = Project::factory()->create();
+
+        $this->assertFalse($student->can('view', $project));
     }
 
     public function test_coordinator_has_the_same_five_project_permissions_as_rector(): void

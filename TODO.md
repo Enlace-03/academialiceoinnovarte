@@ -158,6 +158,14 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** solo si en el futuro se necesita separar el chat por proyecto (ej. un grupo con dos proyectos simultáneos en distintas materias) — hoy (un proyecto por ciclo por semestre) no hay caso de uso real que lo requiera.
 
+## 17. Subida de evidencia por el propio estudiante (Hito 3b-1)
+
+**Estado:** fuera de alcance, explícitamente diferido — el portal de estudiante (Hito 3b-1) es de solo lectura para proyectos/fases/evidencias; la entrega la sigue registrando el docente vía `ExpectedEvidencesRelationManager` en `/academia`.
+
+**Contexto:** `RegisterSubmissionAction` ya existe y ya soporta archivo (`file_disk`/`file_path`/`original_filename`) o texto (`text_content`) — el mecanismo de dominio está listo. Lo que falta es la pantalla del lado del estudiante: un formulario en `ProjectShow` (o un componente propio) que, sobre una `ExpectedEvidence` en estado "pendiente", permita al propio estudiante subir su evidencia y dispare la misma Action, en vez de que el docente la registre a mano.
+
+**Cuándo retomarlo:** siguiente paso natural del portal de estudiante — requiere decidir política de autorización para `RegisterSubmissionAction` cuando el actor es el propio estudiante (hoy ningún llamador que no sea Filament/personal existe), y si se permite corregir una entrega ya evaluada como "devuelta" (`status: returned`) desde el propio portal o solo el docente puede reabrir ese estado.
+
 ---
 
 ## Notas de infraestructura (resueltas)

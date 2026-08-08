@@ -10,7 +10,16 @@
 <body class="bg-gray-50 min-h-screen text-gray-900">
     @auth
         <header class="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
-            <span class="font-semibold">Academia Liceo Innovarte</span>
+            <div class="flex items-center gap-6">
+                <span class="font-semibold">Academia Liceo Innovarte</span>
+
+                @role('student')
+                    <nav class="flex items-center gap-4 text-sm">
+                        <a href="{{ route('student.projects.index') }}" wire:navigate class="text-gray-600 hover:text-emerald-700">Mis proyectos</a>
+                        <a href="{{ route('student.chat') }}" wire:navigate class="text-gray-600 hover:text-emerald-700">Chat de mi grupo</a>
+                    </nav>
+                @endrole
+            </div>
             <div class="flex items-center gap-4">
                 <span class="text-sm text-gray-600">{{ auth()->user()->name }}</span>
                 <form method="POST" action="{{ route('logout') }}">

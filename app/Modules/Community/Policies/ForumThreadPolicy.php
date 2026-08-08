@@ -18,12 +18,17 @@ use App\Modules\Project\Policies\ProjectPolicy;
  * Un estudiante ve/crea si su grado pertenece al ciclo del proyecto
  * (User::canAccessProject) — nunca puede ocultar nada, porque hide() exige
  * projects.update.*, permiso que un rol fijo (student) nunca tiene.
+ *
+ * El atajo "es personal, ve todo" usa ProjectPolicy::viewAsStaff(), NO
+ * view() completo — view() ya incluye la rama student (Hito 3b-1), y si se
+ * usara aquí un estudiante colaría por el atajo y vería hilos ocultos,
+ * saltándose el chequeo de is_hidden de abajo.
  */
 class ForumThreadPolicy
 {
     public function view(User $user, ForumThread $thread): bool
     {
-        if (app(ProjectPolicy::class)->view($user, $thread->project)) {
+        if (app(ProjectPolicy::class)->viewAsStaff($user, $thread->project)) {
             return true;
         }
 
@@ -32,7 +37,7 @@ class ForumThreadPolicy
 
     public function create(User $user, Project $project): bool
     {
-        if (app(ProjectPolicy::class)->view($user, $project)) {
+        if (app(ProjectPolicy::class)->viewAsStaff($user, $project)) {
             return true;
         }
 

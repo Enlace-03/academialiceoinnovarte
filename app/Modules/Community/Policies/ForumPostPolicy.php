@@ -13,12 +13,18 @@ use App\Modules\Project\Policies\ProjectPolicy;
  * Likes: el conteo (likes()->count()) es público para cualquiera que pueda
  * ver el post; el LISTADO de quién dio like (viewLikers) es solo para
  * personal — nunca para estudiantes, ni siquiera de su propio proyecto.
+ *
+ * El atajo "es personal, ve todo" usa ProjectPolicy::viewAsStaff(), NO
+ * view() completo — view() ya incluye la rama student (Hito 3b-1); usar
+ * view() aquí dejaría a un estudiante colarse por el atajo y ver posts/hilos
+ * ocultos, o incluso la lista de likers (viewLikers), saltándose los
+ * chequeos de abajo.
  */
 class ForumPostPolicy
 {
     public function view(User $user, ForumPost $post): bool
     {
-        if (app(ProjectPolicy::class)->view($user, $post->thread->project)) {
+        if (app(ProjectPolicy::class)->viewAsStaff($user, $post->thread->project)) {
             return true;
         }
 
@@ -29,7 +35,7 @@ class ForumPostPolicy
 
     public function create(User $user, ForumThread $thread): bool
     {
-        if (app(ProjectPolicy::class)->view($user, $thread->project)) {
+        if (app(ProjectPolicy::class)->viewAsStaff($user, $thread->project)) {
             return true;
         }
 
@@ -48,6 +54,6 @@ class ForumPostPolicy
 
     public function viewLikers(User $user, ForumPost $post): bool
     {
-        return app(ProjectPolicy::class)->view($user, $post->thread->project);
+        return app(ProjectPolicy::class)->viewAsStaff($user, $post->thread->project);
     }
 }
