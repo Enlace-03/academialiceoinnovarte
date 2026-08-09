@@ -24,6 +24,7 @@ use App\Modules\Community\Policies\ChatMessagePolicy;
 use App\Modules\Community\Policies\ForumPostPolicy;
 use App\Modules\Community\Policies\ForumThreadPolicy;
 use App\Modules\Communication\Listeners\NotifyForumReplyAuthor;
+use App\Modules\Communication\Listeners\NotifyStudentOfEvaluation;
 use App\Modules\Communication\Listeners\NotifyTeacherOfForumActivity;
 use App\Modules\Communication\Listeners\NotifyTeacherOfNewSubmission;
 use App\Modules\Institution\Models\Cycle;
@@ -101,5 +102,6 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ForumPostCreated::class, NotifyForumReplyAuthor::class);
         Event::listen(ForumPostCreated::class, NotifyTeacherOfForumActivity::class);
         Event::listen(SubmissionRegistered::class, NotifyTeacherOfNewSubmission::class);
+        Event::listen(SubmissionEvaluated::class, NotifyStudentOfEvaluation::class);
     }
 }

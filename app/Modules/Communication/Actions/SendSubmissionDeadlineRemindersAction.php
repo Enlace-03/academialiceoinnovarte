@@ -21,7 +21,9 @@ use Illuminate\Support\Carbon;
  * Ruteo (decisión confirmada): estudiante en ciclos 3-4 (Cycle::order >= 3)
  * recibe directo (correo + plataforma); en ciclos 1-2, cada acudiente
  * vinculado recibe en su lugar (solo correo, ver docblock de
- * SubmissionDeadlineReminder::via()).
+ * SubmissionDeadlineReminder::via()). Criterio extraído a
+ * ResolveStudentNotificationRecipientsAction (segunda vuelta del Hito 5),
+ * reutilizado también por la notificación de evaluación recibida.
  *
  * Salta el envío si el estudiante ya entregó TODAS las evidencias esperadas
  * de la fase -- recordarle una entrega que ya hizo sería un defecto visible
@@ -93,17 +95,8 @@ final class SendSubmissionDeadlineRemindersAction
 
     private function notifyRecipients(StudentPhaseSchedule $schedule, int $thresholdDays): void
     {
-        $student = $schedule->student;
-        $cycleOrder = $student->schoolGrade?->cycle?->order ?? 0;
-
-        if ($cycleOrder >= 3) {
-            $student->notify(new SubmissionDeadlineReminder($schedule, $thresholdDays));
-
-            return;
-        }
-
-        foreach ($student->guardians as $guardian) {
-            $guardian->notify(new SubmissionDeadlineReminder($schedule, $thresholdDays));
+        foreach (app(ResolveStudentNotificationRecipientsAction::class)->execute($schedule->student) as $recipient) {
+            $recipient->notify(new SubmissionDeadlineReminder($schedule, $thresholdDays));
         }
     }
 }

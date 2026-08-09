@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Communication\Listeners;
 
 use App\Modules\Assessment\Events\SubmissionRegistered;
+use App\Modules\Communication\Support\FormatsStudentLabel;
 use Filament\Notifications\Notification;
 
 /**
@@ -21,6 +22,8 @@ use Filament\Notifications\Notification;
  */
 final class NotifyTeacherOfNewSubmission
 {
+    use FormatsStudentLabel;
+
     public function handle(SubmissionRegistered $event): void
     {
         $submission = $event->submission;
@@ -32,7 +35,7 @@ final class NotifyTeacherOfNewSubmission
 
         Notification::make()
             ->title('Nueva entrega registrada')
-            ->body("{$submission->student->name} entregó una evidencia.")
+            ->body("{$this->studentLabel($submission->student)} entregó una evidencia.")
             ->sendToDatabase($teacher);
     }
 }

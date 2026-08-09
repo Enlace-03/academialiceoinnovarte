@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Communication\Listeners;
 
 use App\Models\User;
+use App\Modules\Communication\Support\FormatsStudentLabel;
 use App\Modules\Community\Events\ForumPostCreated;
 use Filament\Notifications\Notification;
 
@@ -21,6 +22,8 @@ use Filament\Notifications\Notification;
  */
 final class NotifyTeacherOfForumActivity
 {
+    use FormatsStudentLabel;
+
     public function handle(ForumPostCreated $event): void
     {
         $post = $event->post;
@@ -32,7 +35,7 @@ final class NotifyTeacherOfForumActivity
             ->filter(fn (User $user): bool => $user->isStaff() && $user->id !== $post->user_id)
             ->each(fn (User $teacher) => Notification::make()
                 ->title('Nueva actividad en el foro')
-                ->body("{$post->user->name} publicó en \"{$thread->title}\".")
+                ->body("{$this->studentLabel($post->user)} publicó en \"{$thread->title}\".")
                 ->sendToDatabase($teacher));
     }
 }

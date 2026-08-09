@@ -261,6 +261,18 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** si el volumen real de un docente activo empieza a generar más de, digamos, 10-15 notificaciones/día de forma sostenida — señal de que vale la pena introducir un job de resumen diario en vez de notificación por evento, sin necesidad de rediseñar los listeners actuales (seguirían escribiendo el detalle crudo en algún lado; cambiaría solo cómo se agrupa antes de notificar).
 
+## 25. Patrón: assets de Tailwind sin recompilar en local generan bugs visuales silenciosos (Hito 5a, segunda vuelta)
+
+**Estado:** causa raíz identificada y corregida para el caso puntual (badge de `NotificationBell`) — documentado como patrón porque va a repetirse con cualquier clase de Tailwind nueva mientras el flujo de trabajo local no cambie.
+
+**Contexto:** este WampServer local sirve `public/build` **pre-compilado** — no hay ningún proceso de Vite con HMR corriendo (confirmado: `ps aux | grep vite` vacío). El skill `git-workflow` ya documentaba correctamente que `npm run build` corre en local antes de comitear a la rama `deploy`, pero eso deja implícito (y aquí se demostró falso en la práctica) que development local no lo necesita. **Sí lo necesita**: cualquier clase de Tailwind que aparezca por primera vez en un `.blade.php` nuevo no está en el CSS ya compilado hasta que alguien corra `npm run build` de nuevo — sin eso, el elemento se renderiza sin esa clase, sin ningún error ni advertencia visible.
+
+**Bug real que produjo esto:** el badge de no-leídas de `NotificationBell::class` (`bg-red-500`, `-top-1`, `-right-1`, `h-4`, `w-4`, `rounded-full`) existía correctamente en el DOM con el número correcto desde el primer round del Hito 5a — pero era completamente invisible en el navegador, porque nadie corrió `npm run build` después de crear ese archivo. Pasó inadvertido en la primera verificación en Chrome de ese hito porque esa verificación se enfocó en el *contenido de texto* de las notificaciones, no en el estilo visual del badge — se detectó recién en la segunda vuelta, al inspeccionar explícitamente `getComputedStyle()` del elemento vía `javascript_tool`.
+
+**Cómo se detectó (para reconocerlo más rápido la próxima vez):** un elemento que aparece en el DOM (confirmado con `document.querySelector(...).outerHTML`) pero cuyo `getComputedStyle()` no refleja las clases de Tailwind esperadas (colores/posiciones en sus valores por defecto en vez de los de la clase) es la señal — no un error de consola, no un fallo de test, solo una diferencia silenciosa entre lo que el HTML dice y lo que el CSS compilado sabe.
+
+**Cuándo retomarlo:** correr `npm run build` como parte del checklist de cierre de cualquier hito que agregue o modifique un `.blade.php` con clases de Tailwind nuevas — no solo antes del deploy. Si esto sigue mordiendo en hitos futuros, vale la pena evaluar activar el dev server de Vite (`npm run dev`) para este entorno en vez de depender de recordar recompilar manualmente.
+
 ---
 
 ## Notas de infraestructura (resueltas)

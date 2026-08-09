@@ -33,6 +33,9 @@
                             @case('forum_reply_received')
                                 {{ $data['author_name'] }} respondió a tu publicación en el foro.
                                 @break
+                            @case('evaluation_received')
+                                {{ $data['teacher_name'] }} evaluó tu entrega en "{{ $data['project_title'] }}". Nivel: {{ $data['level_label'] ?? 'sin nivel asignado' }}.
+                                @break
                             @default
                                 Tienes una notificación nueva.
                         @endswitch

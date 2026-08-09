@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Modules\Communication\Notifications;
 
+use App\Modules\Communication\Support\FormatsStudentLabel;
 use App\Modules\Community\Models\ForumPost;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -19,7 +20,7 @@ use Illuminate\Support\Str;
  */
 final class ForumReplyReceived extends Notification implements ShouldQueue
 {
-    use Queueable;
+    use Queueable, FormatsStudentLabel;
 
     public function __construct(public readonly ForumPost $reply) {}
 
@@ -33,7 +34,7 @@ final class ForumReplyReceived extends Notification implements ShouldQueue
         return (new MailMessage())
             ->subject('Nueva respuesta en el foro — Liceo Innovarte')
             ->greeting('Hola '.$notifiable->name)
-            ->line("{$this->reply->user->name} respondió a tu publicación en el foro.")
+            ->line("{$this->studentLabel($this->reply->user)} respondió a tu publicación en el foro.")
             ->line('"'.Str::limit($this->reply->content, 200).'"')
             ->line('Ingresa a la plataforma para ver la conversación completa.')
             ->salutation('Saludos, Academia Liceo Innovarte');
@@ -45,7 +46,7 @@ final class ForumReplyReceived extends Notification implements ShouldQueue
             'type' => 'forum_reply_received',
             'forum_post_id' => $this->reply->id,
             'forum_thread_id' => $this->reply->forum_thread_id,
-            'author_name' => $this->reply->user->name,
+            'author_name' => $this->studentLabel($this->reply->user),
         ];
     }
 }
