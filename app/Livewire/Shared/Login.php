@@ -57,7 +57,19 @@ class Login extends Component
 
         session()->regenerate();
 
-        $this->redirectRoute('portal.home', navigate: true);
+        // Respeta url.intended (guardada automáticamente por Laravel cuando
+        // un middleware bloqueó a un usuario no autenticado, ej. al hacer
+        // clic en el enlace de una notificación sin sesión activa) -- antes
+        // de este fix siempre aterrizaba en portal.home, perdiendo el
+        // destino real (segunda vuelta del Hito 5).
+        //
+        // Sin navigate:true a propósito -- Livewire resetea el scroll al
+        // completar una navegación SPA, ganándole a scrollIntoView() del
+        // script de layouts/portal.blade.php que restaura el #fragmento
+        // (#fase-{id}) perdido en url.intended. Recarga completa aquí es la
+        // única forma confiable de que el scroll a la fase funcione; mismo
+        // bug ya encontrado y resuelto en NotificationBell::visit().
+        $this->redirect(session()->pull('url.intended', route('portal.home')));
     }
 
     public function render()

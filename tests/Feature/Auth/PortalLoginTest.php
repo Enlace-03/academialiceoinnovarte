@@ -104,6 +104,45 @@ class PortalLoginTest extends TestCase
         $this->assertEqualsWithDelta($expectedExpiresAt, $expiresAt, 60);
     }
 
+    /**
+     * Segunda vuelta del Hito 5: antes de este fix, Login::login() siempre
+     * redirigía a portal.home ignorando session('url.intended') -- un clic
+     * en el enlace de una notificación sin sesión activa perdía el destino
+     * real después de autenticarse. Laravel guarda url.intended solo en
+     * peticiones GET normales (Redirector::guest()), no en llamadas
+     * Livewire -- por eso esta prueba visita la ruta protegida con $this->get()
+     * primero (dispara el middleware real), y solo después ejercita el
+     * componente Login, verificando que ambas comparten la misma sesión.
+     */
+    public function test_login_redirects_to_the_originally_intended_url_not_the_generic_home(): void
+    {
+        $cycle = \App\Modules\Institution\Models\Cycle::factory()->create();
+        $grade = \App\Modules\Institution\Models\SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $user = User::factory()->create(['password' => 'secret123', 'school_grade_id' => $grade->id])->assignRole('student');
+        $project = \App\Modules\Project\Models\Project::factory()->create(['cycle_id' => $cycle->id]);
+        $intendedUrl = route('student.projects.show', $project->uuid);
+
+        $this->get($intendedUrl)->assertRedirect(route('login'));
+        $this->assertSame($intendedUrl, session('url.intended'));
+
+        Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'secret123')
+            ->call('login')
+            ->assertRedirect($intendedUrl);
+    }
+
+    public function test_login_falls_back_to_portal_home_when_there_is_no_intended_url(): void
+    {
+        $user = User::factory()->create(['password' => 'secret123'])->assignRole('student');
+
+        Livewire::test(Login::class)
+            ->set('email', $user->email)
+            ->set('password', 'secret123')
+            ->call('login')
+            ->assertRedirect(route('portal.home'));
+    }
+
     public function test_logout_ends_the_session(): void
     {
         $user = User::factory()->create()->assignRole('student');

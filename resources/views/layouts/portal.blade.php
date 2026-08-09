@@ -37,6 +37,46 @@
         {{ $slot }}
     </main>
 
+    {{--
+        Rescata el #fragmento (ej. #fase-4 de un enlace de notificación) que
+        se pierde en el flujo de intended-redirect: el navegador nunca envía
+        el fragmento al servidor (es puramente del lado del cliente), así
+        que session('url.intended') jamás lo tiene -- Login::login() redirige
+        correctamente a la URL, pero sin el fragmento, y el scroll nativo del
+        navegador no tiene nada a qué saltar. Bug real encontrado en la
+        verificación manual de este mismo flujo (segunda vuelta del Hito 5).
+
+        Solo actúa en /login (guardar) y en cualquier otra página del layout
+        (restaurar) -- nunca en una carga normal con fragmento ya presente en
+        la URL, donde el scroll nativo del navegador ya funciona solo y no
+        hay que interferir.
+    --}}
+    @if (request()->routeIs('login'))
+        <script>
+            if (window.location.hash) {
+                sessionStorage.setItem('liceo_scroll_hash', window.location.hash);
+            }
+        </script>
+    @else
+        <script>
+            (function () {
+                const savedHash = sessionStorage.getItem('liceo_scroll_hash');
+
+                if (! savedHash) {
+                    return;
+                }
+
+                sessionStorage.removeItem('liceo_scroll_hash');
+
+                const target = document.querySelector(savedHash);
+
+                if (target) {
+                    target.scrollIntoView();
+                }
+            })();
+        </script>
+    @endif
+
     @livewireScripts
 </body>
 </html>
