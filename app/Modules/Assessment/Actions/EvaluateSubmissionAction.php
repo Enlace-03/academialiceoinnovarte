@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Assessment\Actions;
 
 use App\Models\User;
+use App\Modules\Assessment\Events\SubmissionEvaluated;
 use App\Modules\Assessment\Models\Evaluation;
 use App\Modules\Assessment\Models\EvaluationResult;
 use App\Modules\Assessment\Models\Submission;
@@ -51,6 +52,8 @@ final class EvaluateSubmissionAction
             }
 
             $submission->update(['status' => 'evaluated']);
+
+            event(new SubmissionEvaluated($evaluation));
 
             return $evaluation;
         });

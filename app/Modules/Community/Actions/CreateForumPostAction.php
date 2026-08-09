@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Community\Actions;
 
 use App\Models\User;
+use App\Modules\Community\Events\ForumPostCreated;
 use App\Modules\Community\Models\ForumPost;
 use App\Modules\Community\Models\ForumThread;
 use Illuminate\Validation\ValidationException;
@@ -39,11 +40,15 @@ final class CreateForumPostAction
             }
         }
 
-        return ForumPost::create([
+        $post = ForumPost::create([
             'forum_thread_id' => $thread->id,
             'parent_post_id' => $parentPostId,
             'user_id' => $author->id,
             'content' => $data['content'],
         ]);
+
+        event(new ForumPostCreated($post));
+
+        return $post;
     }
 }

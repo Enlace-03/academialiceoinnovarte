@@ -67,6 +67,7 @@ return [
             'dashboard.institutional.view' => 'Ver dashboard institucional',
             'students-at-risk.view.all'    => 'Ver estudiantes en riesgo de toda la institución',
             'reports.export'               => 'Exportar reportes',
+            'tracking.settings.manage'     => 'Configurar los pesos de la fórmula de avance por ciclo',
         ],
 
         'Comunidad' => [
@@ -103,6 +104,7 @@ return [
             'rubrics.manage', 'submissions.evaluate',
             'observations.write.own', 'observations.write.all', 'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all', 'reports.export',
+            'tracking.settings.manage',
             'avatar-messages.manage',
             'chat.moderate',
         ],

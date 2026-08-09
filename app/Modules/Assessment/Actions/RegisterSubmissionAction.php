@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Modules\Assessment\Actions;
 
 use App\Models\User;
+use App\Modules\Assessment\Events\SubmissionRegistered;
 use App\Modules\Assessment\Models\Submission;
 use App\Modules\Project\Models\ExpectedEvidence;
 
@@ -18,7 +19,7 @@ final class RegisterSubmissionAction
 {
     public function execute(ExpectedEvidence $expectedEvidence, User $student, array $data): Submission
     {
-        return Submission::updateOrCreate(
+        $submission = Submission::updateOrCreate(
             [
                 'expected_evidence_id' => $expectedEvidence->id,
                 'student_id' => $student->id,
@@ -32,5 +33,9 @@ final class RegisterSubmissionAction
                 'submitted_at' => $data['submitted_at'] ?? now(),
             ],
         );
+
+        event(new SubmissionRegistered($submission));
+
+        return $submission;
     }
 }

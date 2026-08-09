@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\Student;
 
+use App\Modules\Assessment\Models\RubricLevel;
 use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Project;
+use App\Modules\Tracking\Models\PerformanceSnapshot;
+use App\Modules\Tracking\Models\StudentProgress;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -77,10 +80,42 @@ class ProjectShow extends Component
         ];
     }
 
+    /**
+     * Lee de las tablas ya precalculadas por Tracking (Hito 4), nunca
+     * recalcula en vivo -- mismo criterio que evidenceStatus() con las
+     * evaluaciones. Dos valores separados a propósito (progress_pct
+     * mecánico + nivel cualitativo aparte), nunca fusionados en un número
+     * que represente calidad.
+     *
+     * @return array{pct: int, level: ?RubricLevel}
+     */
+    public function progressSummary(): array
+    {
+        $progress = StudentProgress::query()
+            ->where('student_id', auth()->id())
+            ->where('project_id', $this->project->id)
+            ->whereNull('phase_id')
+            ->first();
+
+        $snapshot = PerformanceSnapshot::query()
+            ->where('student_id', auth()->id())
+            ->where('project_id', $this->project->id)
+            ->latest('snapshot_date')
+            ->first();
+
+        $levelKey = $snapshot?->metrics['qualitative_level_key'] ?? null;
+
+        return [
+            'pct' => $progress?->progress_pct ?? 0,
+            'level' => $levelKey !== null ? RubricLevel::where('key', $levelKey)->first() : null,
+        ];
+    }
+
     public function render()
     {
         return view('livewire.student.project-show', [
             'phases' => $this->phases(),
+            'progressSummary' => $this->progressSummary(),
         ]);
     }
 }

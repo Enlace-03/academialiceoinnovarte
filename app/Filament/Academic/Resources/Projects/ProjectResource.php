@@ -11,6 +11,7 @@ use App\Filament\Academic\Resources\Projects\RelationManagers\ForumThreadsRelati
 use App\Filament\Academic\Resources\Projects\RelationManagers\PhasesRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ProjectTeamsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\StudentPhaseSchedulesRelationManager;
+use App\Filament\Academic\Resources\Projects\RelationManagers\StudentProgressRelationManager;
 use App\Filament\Academic\Resources\Projects\Schemas\ProjectForm;
 use App\Filament\Academic\Resources\Projects\Tables\ProjectsTable;
 use App\Modules\Project\Models\Project;
@@ -79,6 +80,7 @@ class ProjectResource extends Resource
             ExpectedEvidencesRelationManager::class,
             ForumThreadsRelationManager::class,
             ForumPostsRelationManager::class,
+            StudentProgressRelationManager::class,
         ];
     }
 }

@@ -195,6 +195,16 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** hito de diseño aparte, no incremental sobre 3b-1/3b-2 — requiere decidir el lenguaje visual completo (iconos, tipografía, narración de avatar) antes de tocar las pantallas existentes, en vez de ir parcheando cada componente por separado.
 
+## 20. Destino futuro de la columna `avg_rubric_value` en `student_metrics` (Hito 4)
+
+**Estado:** decisión de diseño tomada, no un vacío de especificación — misma familia de decisión que #11 (`Evaluation::consolidatedLevel()`).
+
+**Contexto:** `RecalculateStudentProgressAction` (Tracking) nunca escribe `avg_rubric_value` — queda `null` a propósito (ver docblock de `StudentMetric.php`). La columna representaría un promedio numérico de niveles de rúbrica, exactamente el tipo de número que la regla absoluta #4 prohíbe exponer. El indicador cualitativo real que sí calcula este hito vive en `PerformanceSnapshot.metrics` como nivel dominante (moda de `EvaluationResult`, con el mismo criterio de desempate de #11: empate → nivel más bajo), nunca como promedio redondeado. Es la misma filosofía aplicada dos veces: #11 decide cómo consolidar niveles cualitativos sin recurrir a un número; este punto decide qué hacer con una columna que ya existe en el esquema y que tienta a hacerlo de todos modos.
+
+**Recomendación:** no eliminar la columna ahora (ya migrada, `nullable`, no rompe nada dejarla en `null`), pero tampoco dejarla muerta para siempre sin una decisión — repropuesta como insumo numérico **interno** del futuro módulo Prediction, que sí necesita un valor real (no cualitativo) para calcular riesgo. Condición: si se usa, que sea estrictamente interno al cálculo de `risk_score`/`risk_level` (Prediction), nunca expuesto en ninguna UI o reporte como si fuera el indicador de calidad del estudiante — ese rol lo sigue cumpliendo el nivel dominante de `PerformanceSnapshot`.
+
+**Cuándo retomarlo:** al especificar el módulo Prediction — decidir ahí, no antes, si Prediction calcula este promedio hacia esta misma columna o hacia un campo propio.
+
 ---
 
 ## Notas de infraestructura (resueltas)

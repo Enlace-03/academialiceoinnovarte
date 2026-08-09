@@ -9,6 +9,7 @@ use App\Modules\Community\Models\ForumPost;
 use App\Modules\Community\Models\ForumThread;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\ThinkingField;
+use App\Modules\Tracking\Models\StudentProgress;
 use Database\Factories\ProjectFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -96,5 +97,15 @@ class Project extends Model
     public function expectedEvidences(): HasManyThrough
     {
         return $this->hasManyThrough(ExpectedEvidence::class, Phase::class);
+    }
+
+    /**
+     * Solo las filas "de proyecto completo" (phase_id null) -- Tracking
+     * (Hito 4) también guarda una fila por fase, pero esa vista agregada
+     * por estudiante en /academia solo necesita el resumen del proyecto.
+     */
+    public function studentProgress(): HasMany
+    {
+        return $this->hasMany(StudentProgress::class)->whereNull('phase_id');
     }
 }

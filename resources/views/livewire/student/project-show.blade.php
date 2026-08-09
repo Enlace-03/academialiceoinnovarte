@@ -18,6 +18,31 @@
     <h1 class="text-xl font-semibold mt-2">{{ $project->title }}</h1>
     <p class="text-sm text-gray-600 mt-1">{{ $project->guiding_question }}</p>
 
+    {{-- Dos indicadores separados a propósito (Hito 4): la barra mide avance
+         mecánico (cobertura de evidencias/foro/chat), nunca calidad. El
+         indicador cualitativo (si ya hay evaluaciones) va aparte, como
+         texto + color -- nunca como número, nunca fusionado en la barra. --}}
+    <div class="mt-6 bg-white rounded-lg shadow p-4">
+        <div class="flex items-center justify-between text-sm mb-1">
+            <span class="font-medium text-gray-700">Avance</span>
+            <span class="text-gray-500">{{ $progressSummary['pct'] }}%</span>
+        </div>
+        <div class="w-full bg-gray-200 rounded-full h-2.5">
+            <div class="bg-emerald-500 h-2.5 rounded-full transition-all" style="width: {{ $progressSummary['pct'] }}%"></div>
+        </div>
+
+        @if ($progressSummary['level'])
+            <div class="mt-3">
+                <span @class([
+                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                    $levelColorClasses[$progressSummary['level']->key] ?? 'bg-gray-100 text-gray-500',
+                ])>
+                    {{ $progressSummary['level']->label }}
+                </span>
+            </div>
+        @endif
+    </div>
+
     <div class="mt-8 space-y-8">
         @foreach ($phases as $phase)
             <section class="bg-white rounded-lg shadow p-5">
