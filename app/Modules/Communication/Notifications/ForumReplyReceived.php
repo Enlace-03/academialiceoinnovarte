@@ -17,6 +17,11 @@ use Illuminate\Support\Str;
  * destinatario -- nunca por actividad general del hilo (decisión confirmada
  * del Hito 5a). Disparada por NotifyForumReplyAuthor, que ya filtra el caso
  * de auto-respuesta antes de instanciar esta clase.
+ *
+ * Destino (segunda vuelta): siempre el hilo real -- el destinatario de esta
+ * notificación en la práctica siempre es alguien con acceso al portal de
+ * estudiante (autor del post padre), nunca un acudiente (ver
+ * ResolveStudentNotificationRecipientsAction, que esta notificación no usa).
  */
 final class ForumReplyReceived extends Notification implements ShouldQueue
 {
@@ -36,7 +41,7 @@ final class ForumReplyReceived extends Notification implements ShouldQueue
             ->greeting('Hola '.$notifiable->name)
             ->line("{$this->studentLabel($this->reply->user)} respondió a tu publicación en el foro.")
             ->line('"'.Str::limit($this->reply->content, 200).'"')
-            ->line('Ingresa a la plataforma para ver la conversación completa.')
+            ->action('Ir al foro', $this->actionUrl())
             ->salutation('Saludos, Academia Liceo Innovarte');
     }
 
@@ -47,6 +52,14 @@ final class ForumReplyReceived extends Notification implements ShouldQueue
             'forum_post_id' => $this->reply->id,
             'forum_thread_id' => $this->reply->forum_thread_id,
             'author_name' => $this->studentLabel($this->reply->user),
+            'action_url' => $this->actionUrl(),
         ];
+    }
+
+    private function actionUrl(): string
+    {
+        $thread = $this->reply->thread;
+
+        return route('student.forum.show', ['project' => $thread->project->uuid, 'thread' => $thread->uuid]);
     }
 }

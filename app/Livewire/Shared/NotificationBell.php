@@ -23,9 +23,35 @@ class NotificationBell extends Component
         $this->open = ! $this->open;
     }
 
-    public function markAsRead(string $notificationId): void
+    /**
+     * Marca como leída Y navega a su destino -- mismo patrón de cualquier
+     * centro de notificaciones (Gmail, Slack): un clic hace las dos cosas.
+     * markAllAsRead() se queda solo marcando, sin navegar (acción masiva).
+     *
+     * NO se puede llamar open() -- colisiona con la propiedad pública $open
+     * del dropdown ($wire.open resuelve a la propiedad, no al método, y
+     * Alpine falla con "$wire.open is not a function"; bug real encontrado
+     * en la verificación manual de este mismo cambio).
+     */
+    public function visit(string $notificationId): void
     {
-        auth()->user()->notifications()->where('id', $notificationId)->first()?->markAsRead();
+        $notification = auth()->user()->notifications()->where('id', $notificationId)->first();
+
+        if ($notification === null) {
+            return;
+        }
+
+        $notification->markAsRead();
+
+        $url = $notification->data['action_url'] ?? null;
+
+        if ($url !== null) {
+            // navigate:true (SPA, sin recarga) NO dispara el scroll nativo
+            // del navegador hacia un #fragmento -- confirmado en vivo
+            // (scrollY se quedaba en 0 con #fase-{id} en la URL). Recarga
+            // completa aquí, la única forma real de que el ancla funcione.
+            $this->redirect($url);
+        }
     }
 
     public function markAllAsRead(): void

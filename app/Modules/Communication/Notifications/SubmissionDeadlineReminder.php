@@ -17,6 +17,10 @@ use Illuminate\Notifications\Notification;
  * 1-2 la reciben los acudientes en su lugar -- solo por correo, vía via(),
  * porque el dashboard mínimo del acudiente (paso 0 de este hito) no tiene
  * campanita útil todavía más allá de su propia lista de pendientes.
+ *
+ * Destino (segunda vuelta): mismo criterio que EvaluationReceived --
+ * estudiante -> ProjectShow anclado a la fase (#fase-{id}), acudiente ->
+ * siempre su dashboard propio (/), nunca una vista de proyecto.
  */
 final class SubmissionDeadlineReminder extends Notification implements ShouldQueue
 {
@@ -47,7 +51,7 @@ final class SubmissionDeadlineReminder extends Notification implements ShouldQue
             ->subject('Recordatorio de entrega — Liceo Innovarte')
             ->greeting('Hola '.($isStudent ? $student->name : $notifiable->name))
             ->line($body)
-            ->line('Ingresa a la plataforma para revisar los detalles.')
+            ->action($isStudent ? 'Ver evidencia pendiente' : 'Ir a mi panel', $this->actionUrl($notifiable))
             ->salutation('Saludos, Academia Liceo Innovarte');
     }
 
@@ -60,6 +64,16 @@ final class SubmissionDeadlineReminder extends Notification implements ShouldQue
             'phase_name' => $this->schedule->phase->name,
             'due_date' => $this->schedule->end_date->toDateString(),
             'threshold_days' => $this->thresholdDays,
+            'action_url' => $this->actionUrl($notifiable),
         ];
+    }
+
+    private function actionUrl(object $notifiable): string
+    {
+        if (! $notifiable->hasRole('student')) {
+            return route('portal.home');
+        }
+
+        return route('student.projects.show', $this->schedule->phase->project->uuid).'#fase-'.$this->schedule->phase_id;
     }
 }

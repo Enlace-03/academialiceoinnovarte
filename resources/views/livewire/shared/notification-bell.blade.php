@@ -22,7 +22,7 @@
             <div class="max-h-96 overflow-y-auto divide-y divide-gray-100">
                 @forelse ($notifications as $notification)
                     <button
-                        wire:click="markAsRead('{{ $notification->id }}')"
+                        wire:click="visit('{{ $notification->id }}')"
                         class="w-full text-left px-3 py-2 text-sm {{ $notification->read_at ? 'text-gray-500' : 'text-gray-900 bg-emerald-50' }} hover:bg-gray-50"
                     >
                         @php $data = $notification->data; @endphp

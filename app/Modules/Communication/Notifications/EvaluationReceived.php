@@ -23,6 +23,12 @@ use Illuminate\Notifications\Notification;
  * SubmissionDeadlineReminder: estudiante en ciclos 3-4 recibe directo
  * (correo+plataforma), acudiente en ciclos 1-2 recibe en su lugar (solo
  * correo) -- ver ResolveStudentNotificationRecipientsAction.
+ *
+ * Destino (segunda vuelta): estudiante -> ProjectShow, anclado a la fase de
+ * la evidencia (#fase-{id}, ver id agregado en project-show.blade.php --
+ * ProjectShow no soporta un parámetro de fase real, es scroll de navegador,
+ * no una vista servidor-autorizada distinta). Acudiente -> siempre su
+ * dashboard propio (/), nunca una vista de proyecto que no existe para él.
  */
 final class EvaluationReceived extends Notification implements ShouldQueue
 {
@@ -51,7 +57,7 @@ final class EvaluationReceived extends Notification implements ShouldQueue
             ->subject('Evaluación recibida — Liceo Innovarte')
             ->greeting('Hola '.($isStudent ? $student->name : $notifiable->name))
             ->line($body)
-            ->line('Ingresa a la plataforma para ver la retroalimentación completa.')
+            ->action($isStudent ? 'Ver evaluación' : 'Ir a mi panel', $this->actionUrl($notifiable))
             ->salutation('Saludos, Academia Liceo Innovarte');
     }
 
@@ -67,6 +73,18 @@ final class EvaluationReceived extends Notification implements ShouldQueue
             'level_label' => $this->evaluation->consolidatedLevel()?->label,
             'project_title' => $this->evaluation->submission->expectedEvidence->phase->project->title,
             'student_label' => $this->studentLabel($student),
+            'action_url' => $this->actionUrl($notifiable),
         ];
+    }
+
+    private function actionUrl(object $notifiable): string
+    {
+        if (! $notifiable->hasRole('student')) {
+            return route('portal.home');
+        }
+
+        $phase = $this->evaluation->submission->expectedEvidence->phase;
+
+        return route('student.projects.show', $phase->project->uuid).'#fase-'.$phase->id;
     }
 }

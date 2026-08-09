@@ -45,7 +45,7 @@
 
     <div class="mt-8 space-y-8">
         @foreach ($phases as $phase)
-            <section class="bg-white rounded-lg shadow p-5">
+            <section id="fase-{{ $phase->id }}" class="bg-white rounded-lg shadow p-5">
                 <h2 class="font-semibold text-emerald-800">{{ $phase->name }}</h2>
 
                 @if ($phase->description)
