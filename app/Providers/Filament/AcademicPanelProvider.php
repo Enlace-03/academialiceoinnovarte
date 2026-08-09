@@ -27,6 +27,7 @@ class AcademicPanelProvider extends PanelProvider
             ->id('academic')
             ->path('academia')
             ->login()
+            ->databaseNotifications()
             ->colors([
                 'primary' => Color::Emerald,
             ])

@@ -21,6 +21,7 @@
                 @endrole
             </div>
             <div class="flex items-center gap-4">
+                <livewire:shared.notification-bell />
                 <span class="text-sm text-gray-600">{{ auth()->user()->name }}</span>
                 <form method="POST" action="{{ route('logout') }}">
                     @csrf

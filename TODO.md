@@ -205,6 +205,62 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** al especificar el módulo Prediction — decidir ahí, no antes, si Prediction calcula este promedio hacia esta misma columna o hacia un campo propio.
 
+## 21. Dashboard del acudiente: solo lista de pendientes, sin avance ni nivel cualitativo (Hito 5a)
+
+**Estado:** decisión explícita del paso 0 del Hito 5a, no un recorte accidental ni el dashboard definitivo del acudiente.
+
+**Contexto:** `PortalHome` (ruta `/`, compartida con el placeholder de estudiante) ahora muestra, para el rol `parent`, la lista de hijos vinculados (`User::children()`) y por cada uno sus evidencias pendientes con fecha límite próxima (`StudentPhaseSchedule` + `ExpectedEvidence`, excluyendo las que ya tienen `Submission` en estado `submitted`/`evaluated`). A propósito **no** incluye barra de avance ni nivel cualitativo — nada de `Tracking` (`StudentMetric`, `PerformanceSnapshot`). Fue el requisito explícito de la especificación del hito, no una limitación técnica: solo se necesitaba "adónde llevar" al acudiente desde el correo de recordatorio de entrega (#3, Hito 5b), no replicar el portal de estudiante.
+
+**Cuándo retomarlo:** el dashboard completo del acudiente (avance del hijo, nivel cualitativo, quizás por proyecto) es un hito de diseño aparte y futuro — requiere decidir primero su propio lenguaje visual "simple y limpio" (`layouts/parent.blade.php`, mencionado como aspiracional en el skill `livewire-components` pero nunca construido; hoy acudiente y estudiante comparten literalmente `layouts/portal.blade.php`), no una extensión incremental de esta lista de pendientes.
+
+## 22. Cron `schedule:run` en producción — no configurado todavía (Hito 5b)
+
+**Estado:** nuevo requisito de infraestructura, pendiente de que Diego lo agregue en cPanel — no bloquea el desarrollo local.
+
+**Contexto:** el job diario de recordatorios de entrega (`reminders:send-deadlines`) se registra en `routes/console.php` vía `Schedule::command(...)->dailyAt('07:00')`, el mecanismo estándar de Laravel. Para que corra en producción, el scheduler necesita su propio cron `* * * * * php artisan schedule:run` (Laravel decide internamente qué tareas programadas tocan ejecutarse cada minuto) — **distinto** del cron de `queue:work --stop-when-empty` ya confirmado en la verificación de infraestructura (ver `CLAUDE.md`, sección "Producción real", punto 1). Ese punto solo confirmó que `Cron Jobs` existe y funciona en cPanel, no que este segundo cron ya esté creado — hoy no existe ninguno.
+
+**Cuándo retomarlo:** antes (o durante) el primer deploy real a producción — agregar el segundo cron en cPanel, ejecutado por la rectora o Diego, no por un agente. Paso a paso exacto (mismo patrón ya documentado para `queue:work`, sección "Producción real" de `CLAUDE.md`):
+
+1. Entrar a cPanel de `academia.liceoinnovarte.edu.co`.
+2. `Avanzada → Cron Jobs`.
+3. En "Add New Cron Job", sección "Common Settings": elegir **"Once Per Minute (* * * * *)"** (o dejar los 5 campos de minuto/hora/día/mes/día-semana en `*`).
+4. Campo "Command", el comando exacto:
+   ```
+   /usr/local/bin/ea-php83 /home/liceoinnovarteed/academia.liceoinnovarte.edu.co/artisan schedule:run >> /dev/null 2>&1
+   ```
+   Mismo binario PHP y misma ruta base que el cron de `queue:work` ya confirmado — solo cambia el subcomando de artisan. El `>> /dev/null 2>&1` es para no acumular correos de cron por cada ejecución silenciosa (Laravel decide internamente, cada minuto, si hay algo que tocaba correr o no).
+5. Click "Add New Cron Job".
+6. **Verificación, no dar por hecho que quedó bien:** esperar 1-2 minutos y correr `php artisan schedule:list` por SSH/terminal de cPanel si está disponible (confirma que `reminders:send-deadlines` aparece con su próxima ejecución), o revisar `storage/logs/laravel.log` tras la hora programada (`07:00`), o consultar la tabla `sent_deadline_reminders` en los días siguientes para confirmar que se están insertando filas.
+
+**Advertencia para no repetir un hallazgo a medias:** este cron **no reemplaza** al de `queue:work`, hacen falta **los dos corriendo a la vez**. `schedule:run` solo decide "hoy toca ejecutar `reminders:send-deadlines`" y llama al comando directamente (síncrono) — pero `SendSubmissionDeadlineRemindersAction` dispara `$student->notify(...)`/`$guardian->notify(...)` con notificaciones que implementan `ShouldQueue`, así que quedan encoladas en la tabla `jobs` hasta que el cron de `queue:work` (el que ya existe) las procese y realmente las envíe. Sin ese segundo cron ya corriendo, los recordatorios se calculan y quedan en `sent_deadline_reminders` (marcados como "ya enviados") pero el correo/notificación real nunca sale — un bug silencioso, no un error visible.
+
+## 23. Patrón: dos mecanismos de notificación no unificados, mismo motivo raíz que #18 (Hito 5a)
+
+**Estado:** decisión de diseño confirmada, no una inconsistencia sin resolver — documentada como patrón para reconocerla más rápido si aparece una tercera variante.
+
+**Contexto:** la campanita del portal estudiante/acudiente (`NotificationBell`) y el panel nativo de notificaciones de `/academia` (Filament) **no leen la misma clase de notificación**, aunque ambas escriben en la misma tabla física `notifications`:
+
+| | `NotificationBell` (portal) | Panel nativo de Filament (`/academia`) |
+|---|---|---|
+| Query | `Illuminate\Notifications\DatabaseNotification::where(notifiable_type, notifiable_id)` — sin filtrar por formato | `vendor/filament/notifications/src/Livewire/DatabaseNotifications.php:112` — agrega `->where('data->format', 'filament')` |
+| Quién escribe | `SubmissionDeadlineReminder` / `ForumReplyReceived` (extienden `Illuminate\Notifications\Notification`, `$user->notify(...)` normal) | `Filament\Notifications\Notification::make()->sendToDatabase()` (usado en `NotifyTeacherOfNewSubmission` / `NotifyTeacherOfForumActivity`) |
+
+**Por qué son dos mecanismos y no uno:** se descubrió en vivo durante la verificación de este hito (no en el diseño original) — una notificación de Illuminate corriente queda bien guardada en `notifications`, pero el panel de Filament la filtra y nunca la muestra, porque no trae `data->format = 'filament'`. La corrección fue usar el constructor nativo de Filament para el lado de personal en vez de reproducir su formato a mano.
+
+**Por qué hoy no es un problema real:** las dos poblaciones de destinatarios no se cruzan — estudiante/acudiente jamás entra a `/academia` (`User::canAccessPanel()` los excluye) y personal jamás ve la campanita del portal (esa ruta no las usa). `NotificationBell` técnicamente no filtra por `format`, así que si algún día un mismo usuario recibiera de ambos tipos, sí las mostraría todas mezcladas — pero ese escenario no existe hoy.
+
+**Cuándo retomarlo:** si aparece una tercera variante de este patrón (un tercer lugar que muestre notificaciones con su propio criterio de formato/filtro), tratarlo como el mismo caso que #18 — señal de que conviene una capa única de "centro de notificaciones" en vez de que cada consumidor de la tabla `notifications` decida su propio filtro por separado.
+
+## 24. Notificaciones al docente sin agrupar: una por post/entrega, sin límite (Hito 5a)
+
+**Estado:** riesgo conocido, aceptado a propósito para esta primera versión — no implementado ningún mecanismo de agrupación todavía.
+
+**Contexto:** `NotifyTeacherOfForumActivity` corre en cada `ForumPostCreated` y `NotifyTeacherOfNewSubmission` en cada `SubmissionRegistered`, sin agrupar ni acumular — una notificación de plataforma por evento, sin tope. Como `RegisterSubmissionAction` dispara el evento también en re-entregas (`updateOrCreate`, decisión ya confirmada del Hito 2), una evidencia devuelta y corregida genera una notificación nueva cada vez, no solo la primera.
+
+**Por qué se deja así por ahora:** con el volumen actual (~200 estudiantes, un docente con 1-3 proyectos activos a la vez, tráfico de foro moderado) el riesgo es bajo — no se bloqueó el hito por esto. Pero no es hipotético: un hilo con 20-30 respuestas en un día ya generaría 20-30 notificaciones individuales para ese docente, ahogando las que sí importan (una entrega real). El patrón más natural cuando eso ocurra no es silenciar, sino agrupar (ej. un resumen diario "hay actividad nueva en 2 de tus proyectos" en vez de notificación por evento).
+
+**Cuándo retomarlo:** si el volumen real de un docente activo empieza a generar más de, digamos, 10-15 notificaciones/día de forma sostenida — señal de que vale la pena introducir un job de resumen diario en vez de notificación por evento, sin necesidad de rediseñar los listeners actuales (seguirían escribiendo el detalle crudo en algún lado; cambiaría solo cómo se agrupa antes de notificar).
+
 ---
 
 ## Notas de infraestructura (resueltas)

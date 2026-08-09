@@ -23,6 +23,9 @@ use App\Modules\Community\Models\ForumThread;
 use App\Modules\Community\Policies\ChatMessagePolicy;
 use App\Modules\Community\Policies\ForumPostPolicy;
 use App\Modules\Community\Policies\ForumThreadPolicy;
+use App\Modules\Communication\Listeners\NotifyForumReplyAuthor;
+use App\Modules\Communication\Listeners\NotifyTeacherOfForumActivity;
+use App\Modules\Communication\Listeners\NotifyTeacherOfNewSubmission;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Group;
 use App\Modules\Institution\Models\SchoolGrade;
@@ -89,5 +92,14 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ChatMessageSent::class, RecordChatMessageSent::class);
         Event::listen(ForumPostLiked::class, RecordForumPostLiked::class);
         Event::listen(ForumPostUnliked::class, RecordForumPostUnliked::class);
+
+        // Communication (Hito 5a/5b): mismo patrón, registro explícito.
+        // Dos listeners distintos sobre el mismo ForumPostCreated a
+        // propósito -- cubren destinatarios y canales distintos (autor del
+        // post padre vs. docente con autoridad de proyecto), no se
+        // fusionan en uno solo.
+        Event::listen(ForumPostCreated::class, NotifyForumReplyAuthor::class);
+        Event::listen(ForumPostCreated::class, NotifyTeacherOfForumActivity::class);
+        Event::listen(SubmissionRegistered::class, NotifyTeacherOfNewSubmission::class);
     }
 }
