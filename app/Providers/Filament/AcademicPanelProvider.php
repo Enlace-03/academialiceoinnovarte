@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Academic\Livewire\DatabaseNotifications;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -27,7 +28,7 @@ class AcademicPanelProvider extends PanelProvider
             ->id('academic')
             ->path('academia')
             ->login()
-            ->databaseNotifications()
+            ->databaseNotifications(livewireComponent: DatabaseNotifications::class)
             ->colors([
                 'primary' => Color::Emerald,
             ])
