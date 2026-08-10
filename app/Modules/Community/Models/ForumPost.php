@@ -70,4 +70,9 @@ class ForumPost extends Model
     {
         return $this->belongsToMany(User::class, 'forum_post_likes')->withTimestamps();
     }
+
+    public function photos(): HasMany
+    {
+        return $this->hasMany(ForumPostPhoto::class)->orderBy('order');
+    }
 }

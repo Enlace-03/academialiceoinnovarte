@@ -71,7 +71,10 @@ return [
         ],
 
         'Comunidad' => [
-            'chat.moderate' => 'Ocultar mensajes de chat de cualquier grupo',
+            'chat.moderate'       => 'Ocultar mensajes de chat de cualquier grupo',
+            'gallery.publish'     => 'Publicar en la galería de fotos (institucional o de proyecto)',
+            'gallery.update.own'  => 'Editar publicaciones propias de la galería',
+            'gallery.update.all'  => 'Editar cualquier publicación de la galería',
         ],
 
         'Sistema' => [
@@ -107,6 +110,7 @@ return [
             'tracking.settings.manage',
             'avatar-messages.manage',
             'chat.moderate',
+            'gallery.publish', 'gallery.update.all',
         ],
 
         'coordinator' => [
@@ -119,6 +123,7 @@ return [
             'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all',
             'chat.moderate',
+            'gallery.publish', 'gallery.update.all',
         ],
 
         'secretary' => [
@@ -132,6 +137,7 @@ return [
             'projects.view.own', 'projects.create', 'projects.update.own',
             'phases.manage', 'resources.manage',
             'rubrics.manage', 'submissions.evaluate', 'observations.write.own',
+            'gallery.publish', 'gallery.update.own',
         ],
     ],
 

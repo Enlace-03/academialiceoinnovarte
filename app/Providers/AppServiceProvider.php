@@ -20,9 +20,11 @@ use App\Modules\Community\Events\ForumPostUnliked;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Community\Models\ForumPost;
 use App\Modules\Community\Models\ForumThread;
+use App\Modules\Community\Models\GalleryPost;
 use App\Modules\Community\Policies\ChatMessagePolicy;
 use App\Modules\Community\Policies\ForumPostPolicy;
 use App\Modules\Community\Policies\ForumThreadPolicy;
+use App\Modules\Community\Policies\GalleryPostPolicy;
 use App\Modules\Communication\Listeners\NotifyForumReplyAuthor;
 use App\Modules\Communication\Listeners\NotifyStudentOfEvaluation;
 use App\Modules\Communication\Listeners\NotifyTeacherOfForumActivity;
@@ -80,6 +82,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ForumThread::class, ForumThreadPolicy::class);
         Gate::policy(ForumPost::class, ForumPostPolicy::class);
         Gate::policy(ChatMessage::class, ChatMessagePolicy::class);
+        Gate::policy(GalleryPost::class, GalleryPostPolicy::class);
         Gate::before(fn ($user, $ability) => $user->hasRole('super_admin') ? true : null);
 
         Project::observe(ProjectObserver::class);

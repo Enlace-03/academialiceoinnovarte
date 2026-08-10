@@ -18,6 +18,26 @@
         </include>
     </source>
     <php>
+        <!--
+            SOLO para el proceso de PHPUnit, NO usar este valor como
+            referencia para configurar memory_limit en producción (ni en
+            ningún otro entorno). Son dos decisiones independientes que
+            comparten el número 512M por coincidencia, no por diseño; el
+            límite real de producción se configura en cPanel (MultiPHP INI
+            Editor) según lo que ese hosting realmente otorgue, ver el
+            comentario de CompressUploadedImageAction::class para la
+            estrategia de producción, que está pensada para funcionar
+            incluso si ese límite termina siendo menor a 512M.
+
+            Por qué existe este valor acá: la compresión real de imágenes
+            (galería/foro, Intervention Image sobre GD) decodifica bitmaps
+            completos en RAM; combinado con una suite de 350+ tests
+            corriendo en el mismo proceso PHP, el límite por defecto (128M)
+            se agota, confirmado en vivo, no es hipotético. 512M da margen
+            sin ocultar una fuga de memoria real (ningún test individual
+            necesita ni de lejos esa cantidad).
+        -->
+        <ini name="memory_limit" value="512M"/>
         <env name="APP_ENV" value="testing"/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
