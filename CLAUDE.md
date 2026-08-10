@@ -98,8 +98,9 @@ una suposición — cualquier cambio de plan de hosting debe re-verificarse.
 | 1 | Colas (cron) | ✅ confirmado | `Cron Jobs` disponible en cPanel (Avanzada), formulario estándar minuto/hora/día/mes/día-semana, sin límite visible. Actualmente sin ningún cron configurado. Comando de ejemplo del propio cPanel: `/usr/local/bin/ea-php83 /home/liceoinnovarteed/academia.liceoinnovarte.edu.co/artisan queue:work --stop-when-empty` cada minuto (`* * * * *`). |
 | 2 | Tabla particionada (`learning_events`) | ✅ confirmado | Probado en vivo: se creó una BD temporal (`liceoinnovarteed_parttest`, borrada al terminar), y dentro una tabla con `PARTITION BY RANGE (UNIX_TIMESTAMP(...))` con 3 particiones — funcionó sin error de privilegios. También se probó `ALTER TABLE ... REORGANIZE PARTITION pmax INTO (...)` (lo que necesita el comando `events:archive`) — funcionó igual. El motor real es **MariaDB 10.11.18**, no MySQL — sintaxis de particionado compatible, pero cualquier función específica de MySQL debe verificarse contra MariaDB antes de usarse. |
 | 3 | Compilación de assets | ✅ ya resuelto, sin ajuste necesario | El skill `git-workflow` ya documentaba correctamente que `npm run build` y `composer install --no-dev` corren **en local**, y los artefactos compilados (`vendor/`, `public/build/`, `public/css|js/filament`) se comitean a la rama `deploy` con `git add -f`. cPanel solo hace `Git Version Control → Update from Remote`. No compila nada — no hay riesgo de que falte Node.js en el servidor. |
-| 4 | Versión de PHP / Composer | ✅ confirmado | `MultiPHP Manager`: versión activa **PHP 8.3 (ea-php83)** en ambos dominios (`academia.liceoinnovarte.edu.co` y `liceoinnovarte.edu.co`, ambos en "Inherited"). Versiones disponibles hasta PHP 8.5. Cumple `"php": "^8.3"` de `composer.json`. `composer install` corre en local (mismo hallazgo que el punto 3) — el límite de memoria del plan no es un riesgo porque Composer nunca corre en el servidor. |
+| 4 | Versión de PHP / Composer | ⚠️ ver nota de 2026-08-09 abajo | `MultiPHP Manager`: versión activa **PHP 8.3 (ea-php83)** en ambos dominios (`academia.liceoinnovarte.edu.co` y `liceoinnovarte.edu.co`, ambos en "Inherited"). Versiones disponibles hasta PHP 8.5. Cumple `"php": "^8.3"` de `composer.json`. `composer install` corre en local (mismo hallazgo que el punto 3) — el límite de memoria del plan no es un riesgo porque Composer nunca corre en el servidor. |
 | 5 | Almacenamiento en disco | ✅ confirmado | Cuota total del plan: **2.44 GB** (18.58 MB usados hoy, 0.74%). Cuota de bases de datos separada: **2.42 GB** (0 bytes usados — **todavía no existe ninguna base de datos de la app en producción**, el deploy real está pendiente). Ancho de banda: 48.83 GB/mes (0.08% usado). Límite de bases de datos del plan: **2 en total**. |
+| 6 | `memory_limit` de PHP | ✅ confirmado 2026-08-09 | `MultiPHP INI Editor` → dominio `academia.liceoinnovarte.edu.co`: **`memory_limit = 1G`** (también `post_max_size` y `upload_max_filesize` en `1G`). Verificado para el Hito de Galería (compresión de imágenes con Intervention Image/GD, que decodifica el bitmap completo en RAM) — con margen amplio sobre los 512M que `CompressUploadedImageAction` intenta pedir vía `ini_set()`; ver ese Action para la estrategia completa (incluye un chequeo de dimensiones antes de decodificar, que rechaza con un error de validación en vez de crashear si algún día el límite real resultara insuficiente). |
 
 **Hallazgo adicional (no solicitado, relevante para revisar después):** la sección
 "SSH Access" de cPanel muestra una interfaz completa de gestión de llaves SSH
@@ -107,6 +108,18 @@ una suposición — cualquier cambio de plan de hosting debe re-verificarse.
 disponible en este plan — no se probó una conexión real. Si se confirma, cambia
 las opciones del flujo de deploy (Opción A de "Manejo de migraciones sin SSH" en
 el skill `git-workflow` podría dejar de ser condicional).
+
+**Discrepancia encontrada el 2026-08-09 (sin resolver, revisar antes del primer deploy real):**
+al verificar el punto 6 (`memory_limit`) contra `MultiPHP INI Editor` para
+`academia.liceoinnovarte.edu.co`, la propia pantalla mostró **`PHP Version ea-php82
+(Inherited)`** — no `ea-php83` como registra el punto 4 de esta misma tabla
+(verificado 2026-08-07). No se confirmó si es un cambio real del hosting entre
+esas dos fechas, un dato mostrado de forma inconsistente entre `MultiPHP Manager`
+y `MultiPHP INI Editor`, o un error de lectura puntual — pero si `ea-php82` es
+correcto, `composer.json` (`"php": "^8.3"`) sería incompatible con la versión
+real del servidor, y el primer deploy fallaría. **Reverificar contra `MultiPHP
+Manager` antes de cualquier deploy real**, no asumir que el punto 4 sigue vigente
+sin volver a mirarlo.
 
 **Nota:** no hay ninguna base de datos de la aplicación en producción todavía —
 el primer deploy real sigue pendiente. El número de bases de datos del plan (2)

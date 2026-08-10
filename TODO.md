@@ -275,6 +275,24 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 ---
 
+## 26. Video en galería/foro: solo YouTube no listado incrustado, nunca subida directa (Hito de galería)
+
+**Estado:** explícitamente fuera de alcance de este hito — no implementado.
+
+**Contexto:** el hito de galería (GalleryPost/GalleryPhoto, fotos adjuntas en ForumPost) cubrió solo imagen. Video quedó deliberadamente afuera por decisión explícita de Diego: cuando se retome, el mecanismo debe ser un enlace a un video de YouTube **no listado** (`unlisted`, no público en el canal) incrustado vía `<iframe>` en la galería, y opcionalmente como enlace simple en el foro — **nunca** subida directa de archivo de video. Nada de MediaLibrary ni de un mecanismo de archivo propio para video: no hay presupuesto de almacenamiento para eso (ver punto 15 de "Producción real" en `CLAUDE.md` — 2.44 GB de cuota total) ni razón para reinventar transcodificación/streaming que YouTube ya resuelve.
+
+**Cuándo retomarlo:** cuando se diseñe ese hito. Falta definir: quién sube el video a la cuenta de YouTube del colegio (fuera de esta plataforma), qué campo captura la URL/ID del video, y si aplica la misma autorización de audiencia (`GalleryPostPolicy`) al INCRUSTADO o si "no listado" ya es suficiente barrera dado que YouTube no lo indexa ni lo muestra en el canal público — probablemente no es suficiente por sí solo si se quiere el mismo aislamiento entre ciclos que ya exige el resto de la app, vale la pena decidirlo explícitamente antes de implementar.
+
+## 27. Texto legal de tratamiento de datos: falta mencionar explícitamente el uso de imagen/fotos de estudiantes
+
+**Estado:** pendiente — no es un bloqueante técnico, es un pendiente de contenido legal.
+
+**Contexto:** con GalleryPost/GalleryPhoto y las fotos adjuntas en ForumPost, la plataforma ahora almacena y muestra fotografías reales de estudiantes (menores de edad) dentro de `/` y `/academia`. El texto legal definitivo de tratamiento de datos (mismo pendiente ya anotado para la integración de Google Workspace, ver TODO.md #12) debe mencionar explícitamente el uso de imagen/fotografía de los estudiantes en la plataforma, no solo el tratamiento de datos académicos — son categorías de dato distintas y el consentimiento de uno no cubre automáticamente al otro.
+
+**Cuándo retomarlo:** junto con el texto legal definitivo de tratamiento de datos (mismo hito que #12), antes de que la galería tenga uso real con fotos de estudiantes en producción — no antes de eso, pero tampoco después.
+
+---
+
 ## Notas de infraestructura (resueltas)
 
 - **`.env.testing`:** creado con `DB_DATABASE=liceo_innovarte_testing` explícito, para que `--env=testing` invocado manualmente no caiga por fallback a la base de desarrollo (`liceo_innovarte`), como ocurrió por accidente durante trabajo previo.
