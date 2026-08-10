@@ -17,6 +17,13 @@
                     <nav class="flex items-center gap-4 text-sm">
                         <a href="{{ route('student.projects.index') }}" wire:navigate class="text-gray-600 hover:text-emerald-700">Mis proyectos</a>
                         <a href="{{ route('student.chat') }}" wire:navigate class="text-gray-600 hover:text-emerald-700">Chat de mi grupo</a>
+                        <a href="{{ route('portal.gallery') }}" wire:navigate class="text-gray-600 hover:text-emerald-700">Galería</a>
+                    </nav>
+                @endrole
+
+                @role('parent')
+                    <nav class="flex items-center gap-4 text-sm">
+                        <a href="{{ route('portal.gallery') }}" wire:navigate class="text-gray-600 hover:text-emerald-700">Galería</a>
                     </nav>
                 @endrole
             </div>

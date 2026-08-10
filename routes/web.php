@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Shared\Gallery;
 use App\Livewire\Shared\Login;
 use App\Livewire\Shared\PortalHome;
 use App\Livewire\Student\ForumThreadShow;
@@ -8,12 +9,15 @@ use App\Livewire\Student\MyProjects;
 use App\Livewire\Student\ProjectShow;
 use App\Models\User;
 use App\Modules\Community\Models\ChatMessage;
+use App\Modules\Community\Models\ForumPostPhoto;
+use App\Modules\Community\Models\GalleryPhoto;
 use App\Modules\Identity\Actions\EndStudentSessionAction;
 use App\Modules\Identity\Actions\GrantStudentSessionAction;
 use App\Modules\Institution\Models\Group;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
 
 // Panel fuera de Filament (Hito 3b-0): login mínimo compartido, guard web
 // estándar de Laravel. No colisiona con /admin ni /academia — Filament
@@ -84,6 +88,31 @@ Route::post('/academia/grupos/{group}/entregar-sesion', function (Group $group) 
 })->middleware('auth')->name('academic.group-sessions.store');
 
 Route::get('/', PortalHome::class)->middleware(['auth', 'expire-delivered-session'])->name('portal.home');
+
+/**
+ * Galería (estudiante y acudiente, sin distinción de rol a nivel de ruta --
+ * mismo criterio que portal.home): la audiencia real se resuelve dentro del
+ * componente vía GalleryPostPolicy. Las dos rutas de abajo sirven el
+ * archivo físico de cada foto individual -- disco 'local' (privado) a
+ * propósito, nunca 'public': una publicación de un ciclo no debe ser
+ * accesible por URL directa desde otro ciclo aunque alguien la adivine, el
+ * mismo aislamiento que ya exige canAccessProject() en el resto de la app.
+ * Gate::authorize('view', $photo->post) es la misma Policy que gobierna si
+ * el post aparece en el listado -- un solo punto de verdad.
+ */
+Route::get('/galeria', Gallery::class)->middleware(['auth', 'expire-delivered-session'])->name('portal.gallery');
+
+Route::get('/galeria/fotos/{photo:uuid}', function (GalleryPhoto $photo) {
+    Gate::authorize('view', $photo->post);
+
+    return Storage::disk($photo->file_disk)->response($photo->file_path);
+})->middleware('auth')->name('gallery.photos.show');
+
+Route::get('/foro/fotos/{photo:uuid}', function (ForumPostPhoto $photo) {
+    Gate::authorize('view', $photo->post);
+
+    return Storage::disk($photo->file_disk)->response($photo->file_path);
+})->middleware('auth')->name('forum.photos.show');
 
 /**
  * Portal de estudiante (Hito 3b-1). role:student, no parent — el padre se
