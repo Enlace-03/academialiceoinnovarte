@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
@@ -32,12 +33,24 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 #[Layout('layouts.portal')]
 class ForumThreadShow extends Component
 {
+    use WithFileUploads;
+
+    /**
+     * KB, antes de comprimir -- solo frontera de entrada del usuario (ver
+     * CreateForumPostAction para por qué el límite de CANTIDAD de fotos, en
+     * cambio, vive del lado del Action).
+     */
+    private const MAX_PHOTO_KB = 8192;
+
     public Project $project;
 
     public ForumThread $thread;
 
     #[Validate('required|string|max:2000')]
     public string $newPostContent = '';
+
+    /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
+    public array $newPostPhotos = [];
 
     public ?int $replyingToPostId = null;
 
@@ -73,13 +86,19 @@ class ForumThreadShow extends Component
     {
         $this->authorize('create', [ForumPost::class, $this->thread]);
 
-        $this->validateOnly('newPostContent');
+        $this->validate([
+            'newPostContent' => 'required|string|max:2000',
+            'newPostPhotos' => 'array|max:'.CreateForumPostAction::MAX_PHOTOS_PER_POST,
+            'newPostPhotos.*' => 'image|max:'.self::MAX_PHOTO_KB,
+        ]);
 
         app(CreateForumPostAction::class)->execute($this->thread, auth()->user(), [
             'content' => $this->newPostContent,
+            'photos' => $this->newPostPhotos,
         ]);
 
         $this->newPostContent = '';
+        $this->newPostPhotos = [];
     }
 
     public function startReply(int $postId): void

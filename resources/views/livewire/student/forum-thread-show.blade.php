@@ -17,6 +17,16 @@
                 </div>
                 <p class="text-sm text-gray-700 mt-2">{{ $post->content }}</p>
 
+                @if ($post->photos->isNotEmpty())
+                    <div class="mt-2 flex flex-wrap gap-2">
+                        @foreach ($post->photos as $photo)
+                            <a href="{{ route('forum.photos.show', $photo->uuid) }}" target="_blank" class="block w-20 h-20 overflow-hidden rounded bg-gray-100">
+                                <img src="{{ route('forum.photos.show', $photo->uuid) }}" alt="" class="w-full h-full object-cover" loading="lazy">
+                            </a>
+                        @endforeach
+                    </div>
+                @endif
+
                 <div class="mt-3 flex items-center gap-4 text-sm">
                     <button type="button" wire:click="toggleLike({{ $post->id }})" class="text-gray-500 hover:text-emerald-700">
                         &#9825; {{ $post->likes_count }}
@@ -68,7 +78,20 @@
         <textarea wire:model="newPostContent" rows="3" class="w-full border border-gray-300 rounded px-3 py-2 text-sm"></textarea>
         @error('newPostContent') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
 
-        <button type="submit" class="mt-2 bg-emerald-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-emerald-700">
+        <label class="block text-sm font-medium mt-3 mb-1">Fotos (máximo 4)</label>
+        <input type="file" wire:model="newPostPhotos" multiple accept="image/*" class="text-sm">
+        @error('newPostPhotos') <span class="block text-xs text-red-600">{{ $message }}</span> @enderror
+        @error('newPostPhotos.*') <span class="block text-xs text-red-600">{{ $message }}</span> @enderror
+
+        @if ($newPostPhotos)
+            <div class="mt-2 flex flex-wrap gap-2">
+                @foreach ($newPostPhotos as $photo)
+                    <img src="{{ $photo->temporaryUrl() }}" class="w-16 h-16 object-cover rounded" alt="">
+                @endforeach
+            </div>
+        @endif
+
+        <button type="submit" class="mt-3 bg-emerald-600 text-white rounded px-4 py-2 text-sm font-medium hover:bg-emerald-700">
             Publicar
         </button>
     </form>
