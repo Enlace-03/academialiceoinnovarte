@@ -72,21 +72,21 @@ class InstitutionSeederTest extends TestCase
         $this->assertSame(10, SchoolGrade::where('is_active', true)->count());
     }
 
-    public function test_seeds_two_groups_per_cycle(): void
+    public function test_seeds_one_group_per_cycle(): void
     {
-        $this->assertSame(8, Group::count());
+        $this->assertSame(4, Group::count());
 
         Cycle::all()->each(function (Cycle $cycle) {
-            $this->assertSame(2, Group::where('cycle_id', $cycle->id)->count());
+            $this->assertSame(1, Group::where('cycle_id', $cycle->id)->count());
         });
     }
 
-    public function test_group_names_combine_cycle_name_and_section(): void
+    public function test_group_name_matches_its_cycle_name(): void
     {
         $exploratorio = Cycle::where('order', 1)->firstOrFail();
 
-        $names = Group::where('cycle_id', $exploratorio->id)->orderBy('name')->pluck('name')->all();
+        $names = Group::where('cycle_id', $exploratorio->id)->pluck('name')->all();
 
-        $this->assertSame(['Exploratorio - A', 'Exploratorio - B'], $names);
+        $this->assertSame(['Exploratorio'], $names);
     }
 }

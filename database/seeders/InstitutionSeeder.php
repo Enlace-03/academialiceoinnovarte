@@ -146,32 +146,29 @@ class InstitutionSeeder extends Seeder
         // ------------------------------------------------------------------
         // 5. Grupos por ciclo (Hito 1B: el grupo/salón ya no es dueño de un
         //    grado individual, sino de un ciclo — puede mezclar estudiantes
-        //    de varios grados del mismo ciclo). Dos secciones (A/B) por
-        //    ciclo por defecto, confirmado con dirección pedagógica para
-        //    el año lectivo 2027.
+        //    de varios grados del mismo ciclo). Confirmado con Diego (product
+        //    owner) el 2026-08-09: un solo grupo real por ciclo para el año
+        //    lectivo vigente; la estructura sigue soportando más de uno si
+        //    el crecimiento de matrícula lo requiere.
         // ------------------------------------------------------------------
         foreach ($cycleIds as $order => $cycleId) {
-            $cycleName = $cycles[$order]['name'];
+            $groupName = $cycles[$order]['name'];
 
-            foreach (['A', 'B'] as $section) {
-                $groupName = "{$cycleName} - {$section}";
+            $exists = DB::table('groups')
+                ->where('cycle_id', $cycleId)
+                ->where('name', $groupName)
+                ->where('year', 2027)
+                ->exists();
 
-                $exists = DB::table('groups')
-                    ->where('cycle_id', $cycleId)
-                    ->where('name', $groupName)
-                    ->where('year', 2027)
-                    ->exists();
-
-                if (! $exists) {
-                    DB::table('groups')->insert([
-                        'uuid'       => Str::uuid(),
-                        'cycle_id'   => $cycleId,
-                        'name'       => $groupName,
-                        'year'       => 2027,
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
-                }
+            if (! $exists) {
+                DB::table('groups')->insert([
+                    'uuid'       => Str::uuid(),
+                    'cycle_id'   => $cycleId,
+                    'name'       => $groupName,
+                    'year'       => 2027,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
             }
         }
 
