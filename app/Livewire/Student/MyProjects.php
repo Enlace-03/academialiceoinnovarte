@@ -14,6 +14,13 @@ use Livewire\Component;
  * proyecto es del ciclo, no de un grupo puntual, así que todos los grados de
  * ese ciclo lo comparten. Sin grado asignado, lista vacía (fail-closed, igual
  * que canAccessProject).
+ *
+ * status='published' explícito acá (hito borrador/publicado): este query NO
+ * pasa por ProjectPolicy en absoluto (a diferencia de ProjectShow, que sí
+ * autoriza vía Policy) -- sin este filtro, un proyecto en borrador seguiría
+ * apareciendo en la lista aunque el clic para entrar fallara con 403. Mismo
+ * criterio que ProjectResource::getEloquentQuery() ya usa del lado staff:
+ * reforzar a nivel de listado lo que la Policy exige a nivel de registro.
  */
 #[Layout('layouts.portal')]
 class MyProjects extends Component
@@ -28,6 +35,7 @@ class MyProjects extends Component
 
         return Project::query()
             ->where('cycle_id', $cycleId)
+            ->where('status', 'published')
             ->orderByDesc('year')
             ->orderByDesc('semester')
             ->orderBy('title')

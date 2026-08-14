@@ -39,10 +39,21 @@ class ProjectPolicy
             || $user->hasPermissionTo('projects.view.own');
     }
 
+    /**
+     * Rama estudiante: combinada, no reemplazada, con el borrador/publicado
+     * (hito posterior a la nota de arriba) -- canAccessProject() exige mismo
+     * ciclo, status === 'published' exige que el docente ya lo haya hecho
+     * visible. Un proyecto publicado de otro ciclo sigue sin ser visible, y
+     * uno del ciclo correcto pero en borrador tampoco. Personal (viewAsStaff)
+     * no se toca -- sigue viendo cualquier estado, incluidos borradores
+     * propios o ajenos según su alcance own/all ya existente.
+     */
     public function view(User $user, Project $project): bool
     {
         return $this->viewAsStaff($user, $project)
-            || ($user->hasRole('student') && $user->canAccessProject($project));
+            || ($user->hasRole('student')
+                && $user->canAccessProject($project)
+                && $project->status === 'published');
     }
 
     public function viewAsStaff(User $user, Project $project): bool

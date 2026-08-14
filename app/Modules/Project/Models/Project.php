@@ -22,13 +22,22 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 #[Fillable([
-    'cycle_id', 'created_by_user_id', 'title', 'problem_situation',
+    'cycle_id', 'created_by_user_id', 'title', 'status', 'problem_situation',
     'guiding_question', 'purpose', 'semester', 'year',
     'suggested_duration_weeks', 'expected_impact',
 ])]
 class Project extends Model
 {
     use HasFactory, HasUuids, SoftDeletes;
+
+    /**
+     * draft: recién creado, no visible para estudiantes (ProjectPolicy).
+     * published: visible para estudiantes del ciclo correspondiente.
+     */
+    public const STATUSES = [
+        'draft' => 'Borrador',
+        'published' => 'Publicado',
+    ];
 
     protected static function newFactory(): ProjectFactory
     {

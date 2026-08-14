@@ -63,6 +63,27 @@ class MyProjectsTest extends TestCase
         $response->assertDontSee('Proyecto de otro ciclo');
     }
 
+    /**
+     * MyProjects no pasa por ProjectPolicy (es un query directo por
+     * cycle_id) -- este filtro es explícito en la propia query, ver
+     * MyProjects::projects().
+     */
+    public function test_student_does_not_see_draft_projects_of_own_cycle(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+
+        Project::factory()->create(['cycle_id' => $cycle->id, 'title' => 'Proyecto publicado']);
+        Project::factory()->draft()->create(['cycle_id' => $cycle->id, 'title' => 'Proyecto en borrador']);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertSee('Proyecto publicado');
+        $response->assertDontSee('Proyecto en borrador');
+    }
+
     public function test_student_without_school_grade_sees_an_empty_list(): void
     {
         $student = User::factory()->create(['school_grade_id' => null])->assignRole('student');

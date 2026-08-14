@@ -165,6 +165,61 @@ class ProjectAuthorizationTest extends TestCase
         $this->assertFalse($student->can('view', $project));
     }
 
+    /**
+     * Hito de borrador/publicado: caso que más importa aislar. Mismo ciclo
+     * a propósito (para descartar que el 403 venga del ciclo y no del
+     * estado) y sin pasar por ninguna lista -- directo a la URL de
+     * ProjectShow, como si el estudiante la hubiera guardado o adivinado.
+     */
+    public function test_student_cannot_view_a_draft_project_even_via_direct_url(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $draftProject = Project::factory()->draft()->create(['cycle_id' => $cycle->id]);
+
+        $this->assertFalse($student->can('view', $draftProject));
+
+        $this->actingAs($student)
+            ->get(route('student.projects.show', $draftProject->uuid))
+            ->assertForbidden();
+    }
+
+    /**
+     * Contraprueba del test anterior: mismo estudiante, mismo ciclo, pero
+     * published -- confirma que el 403 de arriba es por status, no por algo
+     * roto en la ruta o en canAccessProject().
+     */
+    public function test_student_can_view_a_published_project_via_direct_url(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $publishedProject = Project::factory()->create(['cycle_id' => $cycle->id]);
+
+        $this->assertTrue($student->can('view', $publishedProject));
+
+        $this->actingAs($student)
+            ->get(route('student.projects.show', $publishedProject->uuid))
+            ->assertOk();
+    }
+
+    /**
+     * Personal sigue viendo proyectos en cualquier estado, incluidos
+     * borradores propios o ajenos según su alcance own/all ya existente --
+     * el filtro de published aplica únicamente del lado estudiante.
+     */
+    public function test_staff_can_view_a_draft_project_within_their_own_all_scope(): void
+    {
+        $teacher = User::factory()->create()->assignRole('teacher');
+        $rector = User::factory()->create()->assignRole('rector');
+        $ownDraft = Project::factory()->draft()->create(['created_by_user_id' => $teacher->id]);
+        $otherTeacherDraft = Project::factory()->draft()->create();
+
+        $this->assertTrue($teacher->can('view', $ownDraft));
+        $this->assertTrue($rector->can('view', $otherTeacherDraft));
+    }
+
     public function test_coordinator_has_the_same_five_project_permissions_as_rector(): void
     {
         $rector = User::factory()->create()->assignRole('rector');
