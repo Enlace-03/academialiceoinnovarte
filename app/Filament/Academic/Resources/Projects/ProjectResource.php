@@ -5,6 +5,7 @@ namespace App\Filament\Academic\Resources\Projects;
 use App\Filament\Academic\Resources\Projects\Pages\CreateProject;
 use App\Filament\Academic\Resources\Projects\Pages\EditProject;
 use App\Filament\Academic\Resources\Projects\Pages\ListProjects;
+use App\Filament\Academic\Resources\Projects\Pages\ViewProject;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ExpectedEvidencesRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ForumPostsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ForumThreadsRelationManager;
@@ -13,6 +14,7 @@ use App\Filament\Academic\Resources\Projects\RelationManagers\ProjectTeamsRelati
 use App\Filament\Academic\Resources\Projects\RelationManagers\StudentPhaseSchedulesRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\StudentProgressRelationManager;
 use App\Filament\Academic\Resources\Projects\Schemas\ProjectForm;
+use App\Filament\Academic\Resources\Projects\Schemas\ProjectInfolist;
 use App\Filament\Academic\Resources\Projects\Tables\ProjectsTable;
 use App\Modules\Project\Models\Project;
 use Filament\Resources\Resource;
@@ -38,6 +40,11 @@ class ProjectResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return ProjectForm::configure($schema);
+    }
+
+    public static function infolist(Schema $schema): Schema
+    {
+        return ProjectInfolist::configure($schema);
     }
 
     public static function table(Table $table): Table
@@ -67,6 +74,7 @@ class ProjectResource extends Resource
         return [
             'index' => ListProjects::route('/'),
             'create' => CreateProject::route('/create'),
+            'view' => ViewProject::route('/{record}'),
             'edit' => EditProject::route('/{record}/edit'),
         ];
     }
