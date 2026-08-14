@@ -7,6 +7,7 @@ namespace App\Livewire\Shared;
 use App\Models\User;
 use App\Modules\Assessment\Models\Submission;
 use App\Modules\Project\Models\StudentPhaseSchedule;
+use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -17,10 +18,32 @@ use Livewire\Component;
  * (lista de hijos + evidencias pendientes con fecha límite próxima) -- sin
  * barra de avance ni nivel cualitativo, a propósito (ver TODO.md, el
  * dashboard completo del acudiente queda como hito de diseño aparte).
+ *
+ * mount(): personal (staff) que aterriza acá -- por login compartido en /login
+ * en vez de /academia/login, un bookmark viejo, o sesión ya abierta -- se
+ * redirige al panel académico de inmediato, no hay nada útil para su rol en
+ * este placeholder. Chequeo en el propio destino (no solo en el momento del
+ * login), mismo criterio de defensa en profundidad que ya usa
+ * GroupChat::mount() en este proyecto (TODO.md #18) -- cubre cualquier forma
+ * en que el staff termine en / , no solo el submit del formulario de login.
+ *
+ * Sin riesgo de bucle: isStaff() acá es EXACTAMENTE la misma condición que
+ * User::canAccessPanel() exige para el panel 'academic' (ambas llaman al
+ * mismo método). Si algún día divergieran, el peor caso sigue sin ser un
+ * bucle -- el middleware de autenticación de Filament responde con un 403
+ * cuando canAccessPanel() es false, nunca con un redirect de vuelta a '/'
+ * (confirmado contra el comportamiento real de Filament, no supuesto).
  */
 #[Layout('layouts.portal')]
 class PortalHome extends Component
 {
+    public function mount(): void
+    {
+        if (auth()->user()->isStaff()) {
+            $this->redirect(Filament::getPanel('academic')->getUrl());
+        }
+    }
+
     public function childrenPendingEvidences(): Collection
     {
         if (! auth()->user()->hasRole('parent')) {
