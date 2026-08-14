@@ -42,23 +42,7 @@
             @if ($evidence->rubric)
                 <div>
                     <h3 class="text-xs font-semibold uppercase text-gray-400 mb-2">Rúbrica: {{ $evidence->rubric->name }}</h3>
-                    <div class="space-y-4">
-                        @foreach ($evidence->rubric->criteria as $criterion)
-                            <div class="border border-gray-100 rounded p-3">
-                                <p class="text-sm font-medium">{{ $criterion->name }}</p>
-                                <div class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                    @foreach ($levelLabels as $key => $label)
-                                        <div class="text-xs">
-                                            <span @class(['inline-block px-1.5 py-0.5 rounded font-medium mb-1', $levelColorClasses[$key]])>
-                                                {{ $label }}
-                                            </span>
-                                            <p class="text-gray-600">{{ $criterion->level_descriptions[$key] ?? '—' }}</p>
-                                        </div>
-                                    @endforeach
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+                    <x-rubric-criteria-table :criteria="$evidence->rubric->criteria" :results-by-criterion="$resultsByCriterion" />
                 </div>
             @endif
         </div>

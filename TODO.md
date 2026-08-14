@@ -305,6 +305,16 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** al construir la próxima Action de dominio invocada tanto desde un formulario Filament con `FileUpload` como desde un componente Livewire con `WithFileUploads` — verificar desde el diseño si el Action necesita esta misma dualidad de forma de entrada, en vez de descubrirlo recién al conectar el segundo caller.
 
+## 29. `<x-rubric-criteria-table>`: sin auto-expandir el criterio con peor nivel (Hito 3b-3, segunda vuelta)
+
+**Estado:** decisión consciente de no construirlo todavía — comparación directa contra Google Classroom (que tampoco lo hace; sus criterios también parten colapsados por igual).
+
+**Contexto:** al agregar el resaltado por criterio (`resultsByCriterion`, ver `EvidenceShow::resultsByCriterion()` y el `Placeholder` homónimo de `evaluateSubmissionsAction()`), cada criterio de la rúbrica arranca colapsado (`<details>` nativo, sin `open`) con el nivel logrado visible en el resumen de la fila. Una mejora posible: abrir automáticamente el criterio (o los criterios) donde el estudiante sacó el nivel más bajo, para que salte a la vista sin que nadie tenga que expandir manualmente fila por fila.
+
+**Por qué no ahora:** el pedido explícito de este hito fue "sin lógica de abrir automáticamente el peor criterio por ahora" — con 2 criterios (los datos de prueba actuales) no hace falta; con una rúbrica de 5-6 criterios probablemente sí se sienta la falta.
+
+**Cuándo retomarlo:** si en el uso real aparecen rúbricas con varios criterios y retroalimentación de docentes/estudiantes de que cuesta encontrar el criterio más débil sin expandir todo. Requiere decidir el criterio de "peor" cuando hay empate en el nivel más bajo (mismo tipo de decisión que ya tomó `Evaluation::consolidatedLevel()`, ver punto #11 — no asumir que se resuelve igual sin pensarlo).
+
 ---
 
 ## Notas de infraestructura (resueltas)

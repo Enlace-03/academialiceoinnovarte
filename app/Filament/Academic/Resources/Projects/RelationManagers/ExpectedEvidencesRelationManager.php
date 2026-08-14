@@ -199,6 +199,26 @@ class ExpectedEvidencesRelationManager extends RelationManager
                                 ]))
                                 ->columnSpanFull(),
 
+                            Placeholder::make('rubricReference')
+                                ->label('Rúbrica')
+                                ->content(function (Get $get) use ($criteria): \Illuminate\Contracts\View\View {
+                                    $submission = Submission::with([
+                                        'evaluations' => fn ($query) => $query->where('evaluator_type', 'teacher')->with('results.rubricLevel'),
+                                    ])->find($get('submission_id'));
+
+                                    $evaluation = $submission?->evaluations->first();
+
+                                    $resultsByCriterion = $evaluation
+                                        ? $evaluation->results->mapWithKeys(fn ($result) => [$result->rubric_criterion_id => $result->rubricLevel])->all()
+                                        : [];
+
+                                    return view('components.rubric-criteria-table', [
+                                        'criteria' => $criteria,
+                                        'resultsByCriterion' => $resultsByCriterion,
+                                    ]);
+                                })
+                                ->columnSpanFull(),
+
                             ...$criteriaFields,
 
                             Textarea::make('feedback')

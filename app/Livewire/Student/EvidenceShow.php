@@ -86,8 +86,33 @@ class EvidenceShow extends Component
     {
         return $this->evidence->submissions()
             ->where('student_id', auth()->id())
-            ->with(['attachments', 'evaluations' => fn ($query) => $query->where('evaluator_type', 'teacher')])
+            ->with([
+                'attachments',
+                'evaluations' => fn ($query) => $query->where('evaluator_type', 'teacher')->with('results.rubricLevel'),
+            ])
             ->first();
+    }
+
+    /**
+     * Nivel logrado por criterio (resaltado de la tabla de rúbrica, ver
+     * x-rubric-criteria-table) -- un criterio sin EvaluationResult (entrega
+     * sin evaluar, o evaluación parcial) simplemente no aparece en este
+     * array; el componente lo resuelve con `?? null`, sin resaltar nada
+     * para ese criterio, sin error.
+     *
+     * @return array<int, \App\Modules\Assessment\Models\RubricLevel>
+     */
+    public function resultsByCriterion(): array
+    {
+        $evaluation = $this->submission()?->evaluations->first();
+
+        if ($evaluation === null) {
+            return [];
+        }
+
+        return $evaluation->results
+            ->mapWithKeys(fn ($result) => [$result->rubric_criterion_id => $result->rubricLevel])
+            ->all();
     }
 
     /**
@@ -220,6 +245,7 @@ class EvidenceShow extends Component
         return view('livewire.student.evidence-show', [
             'submission' => $this->submission(),
             'evidenceState' => $this->evidenceState(),
+            'resultsByCriterion' => $this->resultsByCriterion(),
         ]);
     }
 }
