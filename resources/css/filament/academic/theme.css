@@ -1,0 +1,27 @@
+@import '/vendor/filament/filament/resources/css/theme.css';
+
+/*
+ * Tema propio del panel académico (Hito 3b-3, segunda vuelta): sin esto,
+ * Filament sirve su CSS por defecto (public/css/filament/filament/app.css,
+ * generado por `php artisan filament:assets`), que solo incluye las clases
+ * de Tailwind que el propio paquete Filament usa en sus componentes -- CERO
+ * relación con resources/css/app.css (el build de Vite de nuestra app).
+ * Cualquier clase nuestra (ej. bg-amber-100, grid-cols-1 sm:grid-cols-2)
+ * escrita en una vista renderizada dentro de este panel (Placeholder::
+ * content(), vistas de RelationManagers) no tenía ninguna garantía de
+ * estilarse -- solo "funcionaba" por coincidencia si esa clase exacta ya
+ * existía en el bundle de Filament. Confirmado en vivo: 0 matches para
+ * "rounded"/"max-h-32"/"bg-amber-100" en el CSS por defecto.
+ *
+ * @source acota el escaneo a las rutas que realmente renderizan dentro de
+ * /academia -- app/Filament/Academic (Resources/Pages/Widgets/RelationManagers)
+ * y las dos carpetas de vistas Blade que ese código invoca directamente:
+ * resources/views/filament/academic (vistas propias del panel, ej.
+ * submission-attachments-list.blade.php) y resources/views/components
+ * (componentes compartidos con el portal del estudiante, ej.
+ * youtube-embed.blade.php y rubric-criteria-table.blade.php -- para que se
+ * vean igual de bien de los dos lados, no solo en el portal).
+ */
+@source '../../../../app/Filament/Academic';
+@source '../../../../resources/views/filament/academic';
+@source '../../../../resources/views/components';

@@ -66,6 +66,13 @@ npm run build
 composer install --no-dev --optimize-autoloader
 php artisan filament:assets
 
+# npm run build también compila el tema propio del panel /academia
+# (resources/css/filament/academic/theme.css → public/build/assets/theme-*.css,
+# registrado en AcademicPanelProvider::viteTheme()) -- es una entrada más del
+# mismo vite.config.js, no un paso aparte. Ver CLAUDE.md "Producción real",
+# punto 3, para el porqué (sin esto, /academia usa el CSS por defecto de
+# Filament y ninguna clase de Tailwind propia del proyecto se ve ahí).
+
 # 4. Comitear artefactos compilados
 git add -f vendor public/build public/css/filament public/js/filament
 git commit -m "deploy: $(date +'%Y-%m-%d %H:%M')"

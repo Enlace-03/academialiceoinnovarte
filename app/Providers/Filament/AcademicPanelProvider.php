@@ -32,6 +32,11 @@ class AcademicPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Emerald,
             ])
+            // Sin esto, Filament sirve su CSS por defecto -- ninguna clase de
+            // Tailwind propia (fuera de las que el paquete ya usa por
+            // casualidad) llega a las vistas de este panel. Ver el docblock
+            // de resources/css/filament/academic/theme.css.
+            ->viteTheme('resources/css/filament/academic/theme.css')
             ->discoverResources(in: app_path('Filament/Academic/Resources'), for: 'App\Filament\Academic\Resources')
             ->discoverPages(in: app_path('Filament/Academic/Pages'), for: 'App\Filament\Academic\Pages')
             ->pages([
