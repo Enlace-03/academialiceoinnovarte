@@ -104,7 +104,9 @@
                         <div class="mt-2 space-y-2">
                             @foreach ($phase->expectedEvidences as $evidence)
                                 @php $evidenceStatus = $this->evidenceStatus($evidence); @endphp
-                                <div class="flex items-start justify-between gap-4 border border-gray-100 rounded p-3">
+                                <a href="{{ route('student.evidence.show', ['project' => $project, 'evidence' => $evidence]) }}"
+                                   wire:navigate
+                                   class="flex items-start justify-between gap-4 border border-gray-100 rounded p-3 hover:border-emerald-300 hover:bg-emerald-50/50 transition-colors">
                                     <div>
                                         <p class="text-sm font-medium">
                                             {{ \App\Modules\Project\Models\ExpectedEvidence::TYPES[$evidence->type] ?? $evidence->type }}
@@ -136,7 +138,7 @@
                                             </span>
                                         @endif
                                     </div>
-                                </div>
+                                </a>
                             @endforeach
                         </div>
                     </div>

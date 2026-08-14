@@ -8,6 +8,7 @@ use App\Modules\Assessment\Actions\RegisterSubmissionAction;
 use App\Modules\Assessment\Models\Evaluation;
 use App\Modules\Assessment\Models\RubricLevel;
 use App\Modules\Assessment\Models\Submission;
+use App\Modules\Assessment\Models\SubmissionAttachment;
 use App\Modules\Project\Models\ExpectedEvidence;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
@@ -16,8 +17,10 @@ use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Gate;
@@ -27,6 +30,17 @@ use Illuminate\Support\Facades\Gate;
  * estudiante entregó, y evalúa con la rúbrica asociada en el mismo lugar.
  * Las evidencias mismas se crean/editan desde PhasesRelationManager — aquí
  * solo se gestionan entregas y evaluación, por eso no hay CreateAction.
+ *
+ * registerSubmissionAction() (Hito 3b-3): el modal recarga los adjuntos ya
+ * existentes al elegir estudiante (Select::make('student_id')->live()
+ * ->afterStateUpdated(...)) en vez de asumir que siempre parte de una
+ * entrega nueva -- reabrir el modal para un estudiante que ya tenía entrega
+ * edita en su lugar (RegisterSubmissionAction reconcilia por existing_id),
+ * no la reemplaza a ciegas. FileUpload::make('file_path') vive DENTRO del
+ * Repeater (uno por adjunto), a diferencia del único FileUpload de antes de
+ * este hito -- Filament ya guarda el archivo en disco antes de que corra
+ * action(), por eso el closure arma 'stored_path' en vez de un objeto de
+ * archivo (ver docblock de RegisterSubmissionAction y TODO.md #28).
  */
 class ExpectedEvidencesRelationManager extends RelationManager
 {
@@ -74,29 +88,82 @@ class ExpectedEvidencesRelationManager extends RelationManager
         return Action::make('registerSubmission')
             ->label('Registrar entrega')
             ->icon('heroicon-o-inbox-arrow-down')
-            ->schema([
+            ->schema(fn (ExpectedEvidence $record): array => [
                 Select::make('student_id')
                     ->label('Estudiante')
                     ->options(fn () => User::query()->role('student')->pluck('name', 'id'))
                     ->required()
-                    ->searchable(),
+                    ->searchable()
+                    ->live()
+                    ->afterStateUpdated(function (?string $state, Set $set) use ($record): void {
+                        $existing = Submission::where('expected_evidence_id', $record->id)
+                            ->where('student_id', $state)
+                            ->with('attachments')
+                            ->first();
+
+                        $set('text_content', $existing?->text_content);
+                        $set('attachments', $existing?->attachments->map(fn (SubmissionAttachment $attachment): array => [
+                            'existing_id' => $attachment->id,
+                            'type' => $attachment->type,
+                            'url' => $attachment->url,
+                        ])->all() ?? []);
+                    }),
 
                 Textarea::make('text_content')
                     ->label('Contenido (si la evidencia es de texto)')
                     ->rows(3),
 
-                Hidden::make('file_disk')->default('local'),
+                Repeater::make('attachments')
+                    ->label('Adjuntos')
+                    ->schema([
+                        Hidden::make('existing_id'),
 
-                FileUpload::make('file_path')
-                    ->label('Archivo (si la evidencia es de archivo)')
-                    ->disk('local')
-                    ->directory('submissions')
-                    ->storeFileNamesIn('original_filename'),
+                        Select::make('type')
+                            ->label('Tipo')
+                            ->options(['photo' => 'Foto', 'link' => 'Enlace'])
+                            ->default('photo')
+                            ->required()
+                            ->live(),
+
+                        FileUpload::make('file_path')
+                            ->label('Foto')
+                            ->image()
+                            ->disk('local')
+                            ->directory('submissions')
+                            ->storeFileNamesIn('original_filename')
+                            ->visible(fn (Get $get): bool => $get('type') === 'photo' && ! $get('existing_id')),
+
+                        TextInput::make('url')
+                            ->label('URL')
+                            ->url()
+                            ->visible(fn (Get $get): bool => $get('type') === 'link'),
+                    ])
+                    ->addActionLabel('Agregar adjunto')
+                    ->columnSpanFull(),
             ])
             ->action(function (ExpectedEvidence $record, array $data): void {
                 $student = User::findOrFail($data['student_id']);
 
-                app(RegisterSubmissionAction::class)->execute($record, $student, $data);
+                $attachments = collect($data['attachments'] ?? [])->map(function (array $row): array {
+                    if (! empty($row['existing_id'])) {
+                        return ['type' => $row['type'], 'existing_id' => (int) $row['existing_id']];
+                    }
+
+                    if ($row['type'] === 'photo') {
+                        return [
+                            'type' => 'photo',
+                            'stored_path' => $row['file_path'],
+                            'original_filename' => $row['original_filename'] ?? null,
+                        ];
+                    }
+
+                    return ['type' => 'link', 'url' => $row['url']];
+                })->all();
+
+                app(RegisterSubmissionAction::class)->execute($record, $student, [
+                    'text_content' => $data['text_content'] ?? null,
+                    'attachments' => $attachments,
+                ]);
             });
     }
 
@@ -124,6 +191,13 @@ class ExpectedEvidencesRelationManager extends RelationManager
                             Placeholder::make('student')
                                 ->label('Estudiante')
                                 ->content(fn (Get $get): string => Submission::find($get('submission_id'))?->student?->name ?? '—'),
+
+                            Placeholder::make('attachments')
+                                ->label('Adjuntos')
+                                ->content(fn (Get $get) => view('filament.academic.submission-attachments-list', [
+                                    'attachments' => Submission::find($get('submission_id'))?->attachments ?? collect(),
+                                ]))
+                                ->columnSpanFull(),
 
                             ...$criteriaFields,
 

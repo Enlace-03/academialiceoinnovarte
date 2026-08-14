@@ -164,11 +164,13 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 ## 17. Subida de evidencia por el propio estudiante (Hito 3b-1)
 
-**Estado:** fuera de alcance, explícitamente diferido — el portal de estudiante (Hito 3b-1) es de solo lectura para proyectos/fases/evidencias; la entrega la sigue registrando el docente vía `ExpectedEvidencesRelationManager` en `/academia`.
+**Estado:** ✅ resuelto (Hito 3b-3) — nuevo componente `App\Livewire\Student\EvidenceShow` (ruta `student.evidence.show`), pantalla dedicada por evidencia estilo Classroom (instrucciones+rúbrica / adjuntos+entrega / chat "Próximamente"). `RegisterSubmissionAction` extendida para múltiples adjuntos (foto+enlaces) con reconciliación (conserva/borra/crea), usada por igual desde el docente (Filament) y el estudiante (Livewire) — una sola Action, sin duplicar lógica.
 
-**Contexto:** `RegisterSubmissionAction` ya existe y ya soporta archivo (`file_disk`/`file_path`/`original_filename`) o texto (`text_content`) — el mecanismo de dominio está listo. Lo que falta es la pantalla del lado del estudiante: un formulario en `ProjectShow` (o un componente propio) que, sobre una `ExpectedEvidence` en estado "pendiente", permita al propio estudiante subir su evidencia y dispare la misma Action, en vez de que el docente la registre a mano.
+**Contexto (histórico, antes de este hito):** `RegisterSubmissionAction` ya existía y ya soportaba archivo (`file_disk`/`file_path`/`original_filename`, un solo archivo) o texto (`text_content`). Ese esquema de columna escalar se reemplazó por la tabla hija `submission_attachments` (migración `2027_01_01_000400`, con migración de datos preservando las entregas ya registradas por docentes en el Hito 2) para admitir varios adjuntos por entrega.
 
-**Cuándo retomarlo:** siguiente paso natural del portal de estudiante — requiere decidir política de autorización para `RegisterSubmissionAction` cuando el actor es el propio estudiante (hoy ningún llamador que no sea Filament/personal existe), y si se permite corregir una entrega ya evaluada como "devuelta" (`status: returned`) desde el propio portal o solo el docente puede reabrir ese estado.
+**Política de autorización resuelta:** `SubmissionPolicy::create(User, ExpectedEvidence)` — estudiante del mismo ciclo (`canAccessProject()`); `SubmissionPolicy::update(User, Submission)` — solo el propio estudiante, y solo si `status === 'returned'`. Una entrega `submitted` (en espera de evaluación) o `evaluated` es de solo lectura para el estudiante; reabrir el estado `returned` sigue siendo un paso que hoy nada en el código realiza automáticamente (ver nota abajo).
+
+**Pendiente real que queda abierto:** nada en el código actual pone una `Submission` en `status = 'returned'` — ni `EvaluateSubmissionAction` (siempre deja `evaluated`) ni ningún otro punto. `Submission::STATUSES` ya lista `'returned' => 'Devuelto'` y toda la UI de reentrega (botón "Volver a entregar" en `EvidenceShow`, rama `update()` de la Policy) ya está preparada para ese estado, pero hoy es inalcanzable en la práctica — falta la acción del lado del docente que decida "esta entrega no está lista, que la corrija" y la marque como `returned` en vez de evaluarla. Diseñar esa acción (probablemente en `ExpectedEvidencesRelationManager`, junto a `evaluateSubmissionsAction()`) es el siguiente paso natural, no parte de este hito.
 
 ## 18. Patrón: reglas de integridad que solo viven en un formulario Filament, no en el modelo/BD (Hito 3b-1)
 
@@ -290,6 +292,18 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 **Contexto:** con GalleryPost/GalleryPhoto y las fotos adjuntas en ForumPost, la plataforma ahora almacena y muestra fotografías reales de estudiantes (menores de edad) dentro de `/` y `/academia`. El texto legal definitivo de tratamiento de datos (mismo pendiente ya anotado para la integración de Google Workspace, ver TODO.md #12) debe mencionar explícitamente el uso de imagen/fotografía de los estudiantes en la plataforma, no solo el tratamiento de datos académicos — son categorías de dato distintas y el consentimiento de uno no cubre automáticamente al otro.
 
 **Cuándo retomarlo:** junto con el texto legal definitivo de tratamiento de datos (mismo hito que #12), antes de que la galería tenga uso real con fotos de estudiantes en producción — no antes de eso, pero tampoco después.
+
+## 28. Patrón: un Action compartido entre Filament y Livewire recibe archivos en formas distintas (Hito 3b-3)
+
+**Estado:** identificado y resuelto para `RegisterSubmissionAction` — documentado como patrón para reconocerlo más rápido si una futura Action también sirve a ambos lados (Filament admin/académico y Livewire estudiante/acudiente).
+
+**Contexto:** `RegisterSubmissionAction::reconcileAttachments()` crea adjuntos tipo foto a partir de dos formas de entrada completamente distintas, según quién llama:
+- **Livewire** (`EvidenceShow`, estudiante): `WithFileUploads` entrega un `TemporaryUploadedFile` sin guardar — el Action es quien lo guarda (`->store('submissions', 'local')`).
+- **Filament** (`ExpectedEvidencesRelationManager`, docente): el campo `FileUpload` ya guardó el archivo en disco **antes** de que corra el `action()` closure — por defecto, Filament no entrega un objeto de archivo temporal, entrega la ruta ya persistida (string). Pasar ese string a un método que espera `->store()`/`->getClientOriginalName()` es un `Call to a member function ... on string` en producción, no un error visible en desarrollo si no se prueban ambos caminos.
+
+**Cómo se resolvió:** `reconcileAttachments()` acepta dos formas del ítem `type=photo` (`file` para el crudo de Livewire, `stored_path`+`original_filename` para el ya guardado de Filament) en vez de que cada caller duplique la lógica de creación/compresión. Ambas formas terminan en el mismo `SubmissionAttachment::create([...])`, así que la compresión (`SubmissionAttachment::booted()`, evento `created()`) corre igual sin importar el origen — no hay riesgo de que un adjunto del docente quede sin comprimir.
+
+**Cuándo retomarlo:** al construir la próxima Action de dominio invocada tanto desde un formulario Filament con `FileUpload` como desde un componente Livewire con `WithFileUploads` — verificar desde el diseño si el Action necesita esta misma dualidad de forma de entrada, en vez de descubrirlo recién al conectar el segundo caller.
 
 ---
 

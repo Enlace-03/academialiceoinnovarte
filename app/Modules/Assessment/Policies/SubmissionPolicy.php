@@ -6,6 +6,7 @@ namespace App\Modules\Assessment\Policies;
 
 use App\Models\User;
 use App\Modules\Assessment\Models\Submission;
+use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Policies\ProjectPolicy;
 
 /**
@@ -19,6 +20,13 @@ use App\Modules\Project\Policies\ProjectPolicy;
  * completo -- view() ya incluye la rama student (Hito 3b-1), y de usarse
  * aquí cualquier estudiante del mismo ciclo podría ver la entrega (y la
  * retroalimentación) de OTRO estudiante, no solo la propia.
+ *
+ * create()/update() (Hito 3b-3, flujo de entrega del propio estudiante):
+ * create() se autoriza contra ExpectedEvidence, no contra Submission -- la
+ * primera entrega de un estudiante para esa evidencia todavía no tiene fila.
+ * update() solo permite reentrega en status=returned (regla del pedido):
+ * una entrega 'submitted' está en espera de evaluación (de solo lectura para
+ * el estudiante) y una 'evaluated' ya no se puede modificar.
  */
 class SubmissionPolicy
 {
@@ -31,5 +39,17 @@ class SubmissionPolicy
         $project = $submission->expectedEvidence->phase->project;
 
         return app(ProjectPolicy::class)->viewAsStaff($user, $project);
+    }
+
+    public function create(User $user, ExpectedEvidence $expectedEvidence): bool
+    {
+        return $user->hasRole('student')
+            && $user->canAccessProject($expectedEvidence->phase->project);
+    }
+
+    public function update(User $user, Submission $submission): bool
+    {
+        return $user->id === $submission->student_id
+            && $submission->status === 'returned';
     }
 }

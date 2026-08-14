@@ -21,13 +21,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * una entrega devuelta se actualiza esta misma fila —
  * unique(expected_evidence_id, student_id) ya lo garantiza.
  *
- * file_disk/file_path/original_filename: mecanismo de archivo pragmático
- * (MediaLibrary confirmado sin conectar en ningún modelo del proyecto),
- * mismo patrón que Resource::url_or_path del Hito 1C.
+ * Adjuntos (foto/enlace) viven en SubmissionAttachment desde el Hito 3b-3
+ * (antes: columnas escalares file_disk/file_path/original_filename, un solo
+ * archivo por entrega -- ver migración 2027_01_01_000400 para la conversión).
  */
 #[Fillable([
     'expected_evidence_id', 'student_id', 'text_content', 'status', 'submitted_at',
-    'file_disk', 'file_path', 'original_filename', 'forum_post_id',
+    'forum_post_id',
 ])]
 class Submission extends Model
 {
@@ -71,5 +71,10 @@ class Submission extends Model
     public function forumPost(): BelongsTo
     {
         return $this->belongsTo(ForumPost::class);
+    }
+
+    public function attachments(): HasMany
+    {
+        return $this->hasMany(SubmissionAttachment::class)->orderBy('order');
     }
 }

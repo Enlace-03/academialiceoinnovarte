@@ -3,11 +3,13 @@
 use App\Livewire\Shared\Gallery;
 use App\Livewire\Shared\Login;
 use App\Livewire\Shared\PortalHome;
+use App\Livewire\Student\EvidenceShow;
 use App\Livewire\Student\ForumThreadShow;
 use App\Livewire\Student\GroupChat;
 use App\Livewire\Student\MyProjects;
 use App\Livewire\Student\ProjectShow;
 use App\Models\User;
+use App\Modules\Assessment\Models\SubmissionAttachment;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Community\Models\ForumPostPhoto;
 use App\Modules\Community\Models\GalleryPhoto;
@@ -115,6 +117,21 @@ Route::get('/foro/fotos/{photo:uuid}', function (ForumPostPhoto $photo) {
 })->middleware('auth')->name('forum.photos.show');
 
 /**
+ * Adjuntos de entrega (Hito 3b-3), mismo criterio que gallery.photos.show /
+ * forum.photos.show: disco 'local' (privado), autorización delegada 100% a
+ * SubmissionPolicy::view() -- un solo punto de verdad, el mismo que decide
+ * si la entrega aparece en la pantalla del estudiante o del docente. Solo
+ * sirve adjuntos type=photo con archivo; uno type=link no tiene file_path,
+ * nunca se navega a esta ruta para esos (se renderiza directo con la url
+ * guardada).
+ */
+Route::get('/entregas/adjuntos/{attachment:uuid}', function (SubmissionAttachment $attachment) {
+    Gate::authorize('view', $attachment->submission);
+
+    return Storage::disk($attachment->file_disk)->response($attachment->file_path);
+})->middleware('auth')->name('submissions.attachments.show');
+
+/**
  * Portal de estudiante (Hito 3b-1). role:student, no parent — el padre se
  * queda en el placeholder de PortalHome hasta que se diseñe su propio
  * dashboard (fuera de alcance de este hito). Los modelos se resuelven por
@@ -138,6 +155,17 @@ Route::middleware(['auth', 'expire-delivered-session', 'role:student'])->group(f
      */
     Route::get('/mis-proyectos/{project:uuid}/foro/{thread:uuid}', ForumThreadShow::class)
         ->name('student.forum.show')
+        ->withoutScopedBindings();
+    /**
+     * withoutScopedBindings() (Hito 3b-3), mismo motivo que la ruta de foro:
+     * ExpectedEvidence no cuelga de Project por una relación de nombre
+     * adivinable ('evidences()' no existe), y ni siquiera cuelga
+     * directamente -- va por Phase. Se resuelve 'evidence' por su propio
+     * uuid; EvidenceShow::mount() verifica a mano que
+     * $evidence->phase->project->id === $project->id (404 si no coincide).
+     */
+    Route::get('/mis-proyectos/{project:uuid}/evidencias/{evidence:uuid}', EvidenceShow::class)
+        ->name('student.evidence.show')
         ->withoutScopedBindings();
     Route::get('/mi-grupo/chat', GroupChat::class)->name('student.chat');
 });
