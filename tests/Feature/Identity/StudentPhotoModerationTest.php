@@ -2,22 +2,28 @@
 
 namespace Tests\Feature\Identity;
 
+use App\Filament\Academic\Resources\Students\Pages\ListStudents;
 use App\Models\User;
 use App\Modules\Identity\Actions\BlockStudentPhotoUploadsAction;
 use App\Modules\Identity\Actions\RemoveStudentPhotoAction;
 use App\Modules\Identity\Actions\UnblockStudentPhotoUploadsAction;
 use Database\Seeders\RolePermissionSeeder;
+use Filament\Facades\Filament;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Livewire;
 use Tests\TestCase;
 
 /**
  * Lado personal de la foto de perfil de estudiante: students.photo.moderate
  * (decisión confirmada: solo coordinator y rector, nunca teacher ni
- * secretary) -- ver config/permissions.php. Autoridad real, a nivel de
- * Action -- la cobertura de la UI de /academia que consume estas mismas
- * Actions vive en un commit aparte, junto con el Resource que la expone.
+ * secretary) -- ver config/permissions.php. Verificado en dos capas, mismo
+ * criterio de defensa en profundidad que el resto del proyecto: la Action
+ * (autoridad real) y la tabla de /academia (lo que el usuario efectivamente
+ * ve -- students.photo.moderate es un permiso atómico aparte de users.*
+ * / institution.*, así que esta UI vive en /academia, NUNCA en /admin, para no
+ * romper la separación de paneles ya fijada como decisión de arquitectura).
  */
 class StudentPhotoModerationTest extends TestCase
 {
@@ -127,5 +133,67 @@ class StudentPhotoModerationTest extends TestCase
 
             $this->assertTrue($rejected, "Se esperaba que {$role} no pudiera desbloquear.");
         }
+    }
+
+    public function test_coordinator_sees_photo_moderation_actions_in_academic_students_resource(): void
+    {
+        $coordinator = User::factory()->create()->assignRole('coordinator');
+        $this->actingAs($coordinator);
+        Filament::setCurrentPanel(Filament::getPanel('academic'));
+
+        $student = $this->studentWithPhoto();
+
+        Livewire::test(ListStudents::class)
+            ->assertTableActionVisible('removeStudentPhoto', $student)
+            ->assertTableActionVisible('blockStudentPhotoUploads', $student)
+            ->assertTableActionHidden('unblockStudentPhotoUploads', $student);
+    }
+
+    /**
+     * A diferencia de /admin (donde secretary sí entraba a UsersTable pero
+     * sin ver las acciones), acá la Resource entera está gateada por
+     * students.photo.moderate vía canViewAny() -- secretary no llega ni al
+     * listado, 403 real, no una lista con botones ocultos.
+     */
+    public function test_secretary_cannot_access_the_academic_students_resource_at_all(): void
+    {
+        $secretary = User::factory()->create()->assignRole('secretary');
+        $this->studentWithPhoto();
+
+        $this->actingAs($secretary)
+            ->get(route('filament.academic.resources.students.index'))
+            ->assertForbidden();
+    }
+
+    /**
+     * El caso concreto que motivó el punto 1 de la revisión de arquitectura:
+     * students.photo.moderate es un permiso atómico aparte de users.*
+     * / institution.* -- alguien que lo tenga y NADA más debe poder ver y usar
+     * esta pantalla igual, porque vive en /academia (acceso por ser personal,
+     * isStaff()) y no en /admin (acceso por prefijo de permiso). No alcanza
+     * con inspeccionar el código: se verifica de punta a punta, incluyendo
+     * que ese mismo usuario NO puede entrar a /admin en absoluto.
+     */
+    public function test_a_user_with_only_the_atomic_permission_reaches_academia_but_never_admin(): void
+    {
+        // Se despoja al rol coordinator (ya sembrado con su preset completo
+        // en setUp) de todo menos el permiso bajo prueba -- aislado a esta
+        // transacción de test, no afecta a otros. givePermissionTo/
+        // syncPermissions a nivel de USUARIO no alcanzaría: el rol seguiría
+        // aportando users.view/users.create por su cuenta (confirmado antes
+        // de escribir este test).
+        \Spatie\Permission\Models\Role::findByName('coordinator')->syncPermissions(['students.photo.moderate']);
+
+        $moderator = User::factory()->create()->assignRole('coordinator');
+        $this->actingAs($moderator);
+
+        $this->assertFalse($moderator->canAccessPanel(Filament::getPanel('admin')));
+        $this->assertTrue($moderator->canAccessPanel(Filament::getPanel('academic')));
+
+        Filament::setCurrentPanel(Filament::getPanel('academic'));
+        $student = $this->studentWithPhoto();
+
+        Livewire::test(ListStudents::class)
+            ->assertTableActionVisible('removeStudentPhoto', $student);
     }
 }
