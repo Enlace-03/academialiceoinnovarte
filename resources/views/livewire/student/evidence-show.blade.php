@@ -170,10 +170,4 @@
             @endif
         </div>
     </div>
-
-    {{-- Chat privado docente-estudiante: hito aparte, espacio reservado --}}
-    <div class="mt-6 bg-white rounded-lg shadow p-5 text-center text-gray-400">
-        <p class="text-sm font-medium">💬 Chat con el docente</p>
-        <p class="text-xs mt-1">Próximamente</p>
-    </div>
 </div>

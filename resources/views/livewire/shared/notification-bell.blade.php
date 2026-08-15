@@ -54,6 +54,9 @@
                                 @case('evaluation_received')
                                     {{ $data['teacher_name'] }} evaluó tu entrega en "{{ $data['project_title'] }}". Nivel: {{ $data['level_label'] ?? 'sin nivel asignado' }}.
                                     @break
+                                @case('private_chat_message_received')
+                                    {{ $data['author_name'] }} te escribió en el {{ $data['thread_type'] === 'individual' ? 'chat privado' : 'chat de equipo' }} de "{{ $data['project_title'] }}".
+                                    @break
                                 @default
                                     Tienes una notificación nueva.
                             @endswitch

@@ -7,6 +7,7 @@ namespace App\Livewire\Student;
 use App\Modules\Assessment\Models\RubricLevel;
 use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Project;
+use App\Modules\Project\Models\ProjectTeam;
 use App\Modules\Tracking\Models\PerformanceSnapshot;
 use App\Modules\Tracking\Models\StudentProgress;
 use Illuminate\Database\Eloquent\Collection;
@@ -111,11 +112,29 @@ class ProjectShow extends Component
         ];
     }
 
+    /**
+     * Chat de equipo (Hito de chat privado): solo se ofrece si el propio
+     * estudiante es integrante de ALGÚN ProjectTeam de este proyecto -- un
+     * proyecto puede tener varios equipos (uno por grupo, o varios dentro
+     * del mismo grupo), y un estudiante nunca pertenece a más de uno en el
+     * mismo proyecto en la práctica actual (ProjectTeamsRelationManager no
+     * impide duplicar la membresía, pero first() basta: si algún día
+     * ocurriera, se muestra el primero, nunca un error).
+     */
+    public function myTeam(): ?ProjectTeam
+    {
+        return ProjectTeam::query()
+            ->where('project_id', $this->project->id)
+            ->whereHas('users', fn ($query) => $query->whereKey(auth()->id()))
+            ->first();
+    }
+
     public function render()
     {
         return view('livewire.student.project-show', [
             'phases' => $this->phases(),
             'progressSummary' => $this->progressSummary(),
+            'myTeam' => $this->myTeam(),
         ]);
     }
 }

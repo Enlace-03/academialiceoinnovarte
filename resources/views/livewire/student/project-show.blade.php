@@ -150,4 +150,29 @@
     <div class="mt-8">
         <livewire:student.forum-thread-list :project="$project" />
     </div>
+
+    {{-- Chat privado con el docente (Hito de chat privado): alcance de
+         PROYECTO, no de evidencia puntual -- reemplaza el "Próximamente"
+         que vivía antes en EvidenceShow. El de equipo solo se muestra si
+         $myTeam existe (el propio estudiante integra un ProjectTeam de
+         este proyecto); el individual siempre está disponible. --}}
+    <div id="chat-individual" class="mt-8">
+        <livewire:shared.private-chat-panel
+            :project="$project"
+            type="individual"
+            :student="auth()->user()"
+            :key="'chat-individual-'.$project->id"
+        />
+    </div>
+
+    @if ($myTeam)
+        <div id="chat-team" class="mt-8">
+            <livewire:shared.private-chat-panel
+                :project="$project"
+                type="team"
+                :team="$myTeam"
+                :key="'chat-team-'.$myTeam->id"
+            />
+        </div>
+    @endif
 </div>

@@ -103,6 +103,34 @@ class NotificationBellTest extends TestCase
             ->assertViewHas('unreadCount', 0);
     }
 
+    /**
+     * Bug real encontrado en la verificación manual del chat privado: el
+     * @switch de tipos en la vista no tenía un @case para
+     * 'private_chat_message_received' y caía al @default genérico
+     * ("Tienes una notificación nueva"), aunque la Notification sí traía
+     * todos los datos necesarios (author_name/thread_type/project_title).
+     */
+    public function test_private_chat_message_notification_renders_its_specific_text(): void
+    {
+        $notification = new DatabaseNotification();
+        $notification->id = (string) Str::uuid();
+        $notification->type = 'App\\Modules\\Communication\\Notifications\\PrivateChatMessageReceived';
+        $notification->notifiable_type = User::class;
+        $notification->notifiable_id = $this->student->id;
+        $notification->data = [
+            'type' => 'private_chat_message_received',
+            'author_name' => 'Docente Prueba',
+            'thread_type' => 'individual',
+            'project_title' => 'El agua que compartimos',
+        ];
+        $notification->save();
+
+        Livewire::actingAs($this->student)->test(NotificationBell::class)
+            ->call('toggle')
+            ->assertSee('Docente Prueba te escribió en el chat privado de "El agua que compartimos".', false)
+            ->assertDontSee('Tienes una notificación nueva.');
+    }
+
     public function test_pagination_does_not_break_the_unread_count_of_the_bell(): void
     {
         for ($i = 0; $i < 15; $i++) {

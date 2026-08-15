@@ -10,6 +10,7 @@ use App\Filament\Academic\Resources\Projects\RelationManagers\ExpectedEvidencesR
 use App\Filament\Academic\Resources\Projects\RelationManagers\ForumPostsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ForumThreadsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\PhasesRelationManager;
+use App\Filament\Academic\Resources\Projects\RelationManagers\PrivateChatThreadsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\ProjectTeamsRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\StudentPhaseSchedulesRelationManager;
 use App\Filament\Academic\Resources\Projects\RelationManagers\StudentProgressRelationManager;
@@ -89,6 +90,7 @@ class ProjectResource extends Resource
             ForumThreadsRelationManager::class,
             ForumPostsRelationManager::class,
             StudentProgressRelationManager::class,
+            PrivateChatThreadsRelationManager::class,
         ];
     }
 }
