@@ -69,3 +69,14 @@ tendrá la versión de producción (con particionado).
 - No self-signup — solo admin o rector crean cuentas
 - No enviar PII a servicios externos (LLMs, analytics)
 - Política de tratamiento de datos requerida antes del piloto real
+- Chat privado estudiante-docente: la visibilidad institucional
+  (`private_chats.view.all`, coordinator/rector) es deliberadamente de solo
+  lectura — protección infantil vía Ley 1620 de 2013 (deber institucional de
+  vigilar el trato de personal hacia estudiantes) balanceada con minimización
+  de datos vía Ley 1581 de 2012 (mismo criterio que `DataTreatmentConsent`).
+  Escribir en un chat puntual exige autoridad real sobre ESE proyecto
+  (`projects.update.all`, o ser el docente responsable vía
+  `projects.update.own`), nunca el solo hecho de poder leerlo — nunca fusionar
+  ambos permisos en un preset futuro. Ver el comentario junto a
+  `private_chats.view.all` en `config/permissions.php` y
+  `PrivateChatThreadPolicy` (`view()`/`viewContext()` vs. `create()`).

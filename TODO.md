@@ -337,6 +337,14 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** si el equipo crece más allá de Diego, o si reconstruir el entorno de dev se vuelve una tarea frecuente. La solución más simple sería un `DevFixturesSeeder` (o similar, fuera de `DatabaseSeeder` para no correr en producción) que cree estas cuentas con `firstOrCreate` y contraseña fija — no urgente hoy porque el entorno de dev actual ya tiene las cuentas que hacen falta.
 
+## 32. Chat privado — visibilidad institucional deliberadamente separada de la autoridad de escritura (gobernanza, ya implementada)
+
+**Estado:** ✅ decisión de gobernanza confirmada y verificada, no deuda técnica — se documenta acá para que no se reabra ni se funda por accidente en un ajuste futuro de `config/permissions.php`.
+
+**Contexto:** `private_chats.view.all` (coordinator/rector) es deliberadamente de **solo lectura**. La Ley 1620 de 2013 exige que la institución pueda vigilar el trato de personal hacia estudiantes (protección escolar contra la violencia) — de ahí la lectura universal. Pero el principio de minimización de datos de la Ley 1581 de 2012 (mismo criterio ya aplicado en `RecordDataTreatmentConsentAction`/`DataTreatmentConsent`) exige que esa vigilancia no se convierta en autoridad operativa de facto: escribir en un chat puntual sigue exigiendo autoridad **real** sobre ese proyecto (`projects.update.all`, o ser el docente responsable vía `projects.update.own`), nunca el solo hecho de poder leerlo. `PrivateChatThreadPolicy` ya separa `view()`/`viewContext()` (lectura, incluye `.view.all`) de `create()` (escritura, nunca incluye `.view.all`) — verificado por `PrivateChatThreadPolicyTest::test_institutional_viewer_with_only_view_all_can_read_but_not_write` y `test_coordinator_with_real_project_authority_can_also_write`. El comentario completo vive junto a `private_chats.view.all` en `config/permissions.php` (catálogo y presets).
+
+**Cuándo retomarlo:** nunca, salvo que cambie la base legal — si algún ajuste futuro a los presets de `coordinator`/`rector` termina otorgando escritura por el solo hecho de tener `private_chats.view.all`, es una regresión de esta decisión, no una mejora.
+
 ---
 
 ## Notas de infraestructura (resueltas)
