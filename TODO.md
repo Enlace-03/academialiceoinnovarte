@@ -315,6 +315,18 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** si en el uso real aparecen rúbricas con varios criterios y retroalimentación de docentes/estudiantes de que cuesta encontrar el criterio más débil sin expandir todo. Requiere decidir el criterio de "peor" cuando hay empate en el nivel más bajo (mismo tipo de decisión que ya tomó `Evaluation::consolidatedLevel()`, ver punto #11 — no asumir que se resuelve igual sin pensarlo).
 
+## 30. Hito de Boletines (parcial/final/retiro) — pendiente, incluye nivel cualitativo agregado por campo de pensamiento
+
+**Estado:** no iniciado — mencionado explícitamente al cerrar el hito de progreso agregado por campo de pensamiento (Hito 4b) para que quede anotado antes de perderse.
+
+**Contexto:** el Hito 4b (`AggregateThinkingFieldProgressAction`) implementó **solo la barra mecánica agregada** por campo de pensamiento (promedio simple de `progress_pct` entre los proyectos activos que tocan cada campo) — deliberadamente **sin** nivel cualitativo agregado por campo, y sin ninguna pantalla interactiva para él. Ese nivel cualitativo agregado es justamente lo que le falta al hito de Boletines: tres variantes (parcial, final, retiro), cada uno debe calcular y mostrar el **nivel cualitativo agregado por campo de pensamiento** — no solo el avance mecánico.
+
+**Cálculo del nivel cualitativo agregado (cuando se construya):** mismo criterio de desempate que `Evaluation::consolidatedLevel()` y `RecalculateStudentProgressAction::dominantQualitativeLevel()` (ver punto #11) — **moda** de los niveles cualitativos entre los proyectos/criterios que tocan el campo, empate resuelto por el **nivel más bajo** de los empatados (criterio conservador, no el más favorable). Convertido a la **escala numérica de 5 niveles ya confirmada por Rafa** — la conversión exacta (mapeo de los 4 niveles cualitativos vigentes, `inicio/en_proceso/logro_esperado/logro_destacado`, a esa escala numérica de 5) todavía no está documentada en este repositorio y hay que precisarla al especificar este hito, no asumirla.
+
+**Dónde se muestra (ya decidido, no reabrir cuando se construya):** únicamente dentro del **documento del boletín generado** (PDF o el formato que se decida) — **nunca** como pantalla interactiva del portal, ni del estudiante ni del acudiente ni de `/academia`. Coherente con la regla absoluta #4 del proyecto (los niveles de rúbrica nunca se muestran como número) aplicada con más cuidado todavía acá, porque acá SÍ se convierte a número — pero solo dentro del documento oficial, no en ninguna UI de uso diario.
+
+**Cuándo retomarlo:** al especificar el hito de Boletines — requiere además decidir el disparador de cada variante (parcial/final/retiro), el formato de salida, y quién lo genera (¿el propio docente desde `/academia`? ¿un job programado?) — nada de eso está definido todavía, solo el cálculo cualitativo agregado que este punto documenta para no perderlo.
+
 ---
 
 ## Notas de infraestructura (resueltas)
