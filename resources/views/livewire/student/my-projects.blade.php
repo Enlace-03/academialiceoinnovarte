@@ -1,6 +1,13 @@
 <div>
     <h1 class="text-xl font-semibold mb-6">Mis proyectos</h1>
 
+    @if ($thinkingFieldProgress->isNotEmpty())
+        <div class="bg-white rounded-lg shadow p-4 mb-6">
+            <h2 class="text-sm font-medium text-gray-700 mb-4">Avance por campo de pensamiento</h2>
+            <x-thinking-field-progress :fields="$thinkingFieldProgress" />
+        </div>
+    @endif
+
     @if ($projects->isEmpty())
         <p class="text-sm text-gray-500">
             Todavía no hay proyectos disponibles para tu ciclo.

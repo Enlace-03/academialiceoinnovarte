@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Student;
 
 use App\Modules\Project\Models\Project;
+use App\Modules\Tracking\Actions\AggregateThinkingFieldProgressAction;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -46,6 +47,7 @@ class MyProjects extends Component
     {
         return view('livewire.student.my-projects', [
             'projects' => $this->projects(),
+            'thinkingFieldProgress' => app(AggregateThinkingFieldProgressAction::class)->execute(auth()->user()),
         ]);
     }
 }

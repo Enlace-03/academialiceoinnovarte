@@ -5,7 +5,9 @@ namespace Tests\Feature\Student;
 use App\Models\User;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\SchoolGrade;
+use App\Modules\Institution\Models\ThinkingField;
 use App\Modules\Project\Models\Project;
+use App\Modules\Tracking\Models\StudentProgress;
 use Database\Seeders\RoleLevelSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -82,6 +84,36 @@ class MyProjectsTest extends TestCase
         $response->assertOk();
         $response->assertSee('Proyecto publicado');
         $response->assertDontSee('Proyecto en borrador');
+    }
+
+    /**
+     * Hito 4b: el bloque de barras por campo de pensamiento aparece en el
+     * mismo home del estudiante donde ya está la lista de proyectos --
+     * cálculo real ya cubierto a fondo en AggregateThinkingFieldProgressActionTest,
+     * acá solo se confirma que se renderiza en esta pantalla.
+     */
+    public function test_shows_the_thinking_field_progress_block(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+
+        $field = ThinkingField::factory()->create(['name' => 'Campo de prueba']);
+        $project = Project::factory()->create(['cycle_id' => $cycle->id]);
+        $project->thinkingFields()->attach($field->id);
+        StudentProgress::factory()->create([
+            'student_id' => $student->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 42,
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertSee('Avance por campo de pensamiento');
+        $response->assertSee('Campo de prueba');
+        $response->assertSee('42%');
     }
 
     public function test_student_without_school_grade_sees_an_empty_list(): void
