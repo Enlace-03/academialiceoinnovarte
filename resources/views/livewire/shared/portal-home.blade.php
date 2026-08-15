@@ -10,9 +10,16 @@
 
     @role('parent')
         <div class="mt-6 space-y-6">
-            @forelse ($childrenPendingEvidences as $entry)
+            @forelse ($childrenDashboard as $entry)
                 <div class="bg-white border border-gray-200 rounded p-4">
                     <h2 class="font-medium text-gray-900">{{ $entry['child']->name }}</h2>
+
+                    @if ($entry['thinkingFieldProgress']->isNotEmpty())
+                        <div class="mt-3 mb-4">
+                            <h3 class="text-xs font-semibold uppercase text-gray-400 mb-2">Avance por campo de pensamiento</h3>
+                            <x-thinking-field-progress :fields="$entry['thinkingFieldProgress']" />
+                        </div>
+                    @endif
 
                     @if ($entry['pending']->isEmpty())
                         <p class="text-sm text-gray-500 mt-2">Sin entregas pendientes por ahora.</p>

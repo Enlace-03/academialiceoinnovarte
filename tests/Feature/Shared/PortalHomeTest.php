@@ -5,10 +5,14 @@ namespace Tests\Feature\Shared;
 use App\Livewire\Shared\PortalHome;
 use App\Models\User;
 use App\Modules\Assessment\Models\Submission;
+use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\Institution;
+use App\Modules\Institution\Models\SchoolGrade;
+use App\Modules\Institution\Models\ThinkingField;
 use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Project;
 use App\Modules\Project\Models\StudentPhaseSchedule;
+use App\Modules\Tracking\Models\StudentProgress;
 use Database\Seeders\RolePermissionSeeder;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -69,6 +73,36 @@ class PortalHomeTest extends TestCase
 
         Livewire::actingAs($guardian)->test(PortalHome::class)
             ->assertDontSee('Evidencia ya entregada');
+    }
+
+    /**
+     * Hito 4b: primera pieza de progreso real del dashboard del acudiente
+     * -- una por hijo, mismo cálculo que el portal de estudiante (ya
+     * cubierto a fondo en AggregateThinkingFieldProgressActionTest).
+     */
+    public function test_guardian_sees_thinking_field_progress_for_each_child(): void
+    {
+        $guardian = User::factory()->create()->assignRole('parent');
+
+        $cycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $child = User::factory()->create(['name' => 'Estudiante Ejemplo', 'school_grade_id' => $grade->id])->assignRole('student');
+        $guardian->children()->attach($child->id, ['relationship' => 'padre']);
+
+        $field = ThinkingField::factory()->create(['name' => 'Campo de prueba']);
+        $project = Project::factory()->create(['cycle_id' => $cycle->id]);
+        $project->thinkingFields()->attach($field->id);
+        StudentProgress::factory()->create([
+            'student_id' => $child->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 65,
+        ]);
+
+        Livewire::actingAs($guardian)->test(PortalHome::class)
+            ->assertSee('Avance por campo de pensamiento')
+            ->assertSee('Campo de prueba')
+            ->assertSee('65%');
     }
 
     /**

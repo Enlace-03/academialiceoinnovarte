@@ -7,6 +7,7 @@ namespace App\Livewire\Shared;
 use App\Models\User;
 use App\Modules\Assessment\Models\Submission;
 use App\Modules\Project\Models\StudentPhaseSchedule;
+use App\Modules\Tracking\Actions\AggregateThinkingFieldProgressAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Layout;
@@ -15,9 +16,14 @@ use Livewire\Component;
 /**
  * Placeholder post-login del panel fuera de Filament (Hito 3b-0) para
  * estudiante; para acudiente, desde el Hito 5a, es su dashboard mínimo real
- * (lista de hijos + evidencias pendientes con fecha límite próxima) -- sin
- * barra de avance ni nivel cualitativo, a propósito (ver TODO.md, el
- * dashboard completo del acudiente queda como hito de diseño aparte).
+ * (lista de hijos + evidencias pendientes con fecha límite próxima). Desde
+ * el Hito 4b, se agrega el avance agregado por campo de pensamiento de cada
+ * hijo (AggregateThinkingFieldProgressAction, mismo cálculo y mismo
+ * componente <x-thinking-field-progress> que el portal de estudiante) --
+ * primera pieza de progreso real del dashboard del acudiente, anticipada
+ * desde el Hito 5a. Sigue sin nivel cualitativo agregado (diferido al hito
+ * de Boletines, ver TODO.md) ni barra por proyecto individual -- el
+ * dashboard completo del acudiente sigue siendo un hito de diseño aparte.
  *
  * mount(): personal (staff) que aterriza acá -- por login compartido en /login
  * en vez de /academia/login, un bookmark viejo, o sesión ya abierta -- se
@@ -44,7 +50,7 @@ class PortalHome extends Component
         }
     }
 
-    public function childrenPendingEvidences(): Collection
+    public function childrenDashboard(): Collection
     {
         if (! auth()->user()->hasRole('parent')) {
             return new Collection();
@@ -54,6 +60,7 @@ class PortalHome extends Component
             ->map(fn (User $child) => [
                 'child' => $child,
                 'pending' => $this->pendingEvidencesFor($child),
+                'thinkingFieldProgress' => app(AggregateThinkingFieldProgressAction::class)->execute($child),
             ]);
     }
 
@@ -86,7 +93,7 @@ class PortalHome extends Component
     public function render()
     {
         return view('livewire.shared.portal-home', [
-            'childrenPendingEvidences' => $this->childrenPendingEvidences(),
+            'childrenDashboard' => $this->childrenDashboard(),
         ]);
     }
 }
