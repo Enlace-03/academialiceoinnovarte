@@ -3,8 +3,10 @@
 namespace App\Filament\Academic\Resources\Projects\RelationManagers;
 
 use App\Modules\Assessment\Models\RubricLevel;
+use App\Modules\Tracking\Actions\AggregateThinkingFieldProgressAction;
 use App\Modules\Tracking\Models\PerformanceSnapshot;
 use App\Modules\Tracking\Models\StudentProgress;
+use Filament\Actions\Action;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -13,12 +15,20 @@ use Filament\Tables\Table;
  * Vista de solo lectura por estudiante (Hito 4, decisión confirmada) --
  * sin CreateAction/EditAction/DeleteAction a propósito: estas filas las
  * escribe únicamente RecalculateStudentProgressAction, nunca el personal a
- * mano. El dashboard agregado por campo de pensamiento queda fuera de este
- * hito (Hito 4b, Analytics).
+ * mano.
  *
  * Dos columnas separadas para avance (Avance %) y nivel cualitativo
  * (Nivel), nunca fusionadas -- mismo criterio que la barra del portal de
  * estudiante.
+ *
+ * "Ver progreso por campo" (Hito 4b): el dashboard agregado por campo de
+ * pensamiento es por-estudiante-a-través-de-proyectos, un eje distinto al
+ * de esta tabla (por-proyecto-a-través-de-estudiantes) -- no cabe como
+ * columna más. En vez de una página nueva de perfil de estudiante (que no
+ * existe todavía en este panel), un modal de solo lectura por fila reutiliza
+ * AggregateThinkingFieldProgressAction y el mismo componente
+ * <x-thinking-field-progress> del portal -- mismo cálculo, misma vista,
+ * sin duplicar lógica.
  */
 class StudentProgressRelationManager extends RelationManager
 {
@@ -81,8 +91,23 @@ class StudentProgressRelationManager extends RelationManager
             ->emptyStateHeading('Todavía no hay avance registrado')
             ->emptyStateDescription('Se llena automáticamente cuando los estudiantes entregan, participan en el foro o en el chat.')
             ->headerActions([])
-            ->recordActions([])
+            ->recordActions([
+                self::thinkingFieldProgressAction(),
+            ])
             ->toolbarActions([]);
+    }
+
+    protected static function thinkingFieldProgressAction(): Action
+    {
+        return Action::make('thinkingFieldProgress')
+            ->label('Ver progreso por campo')
+            ->icon('heroicon-o-chart-bar')
+            ->modalHeading(fn (StudentProgress $record): string => "Progreso por campo de pensamiento — {$record->student->name}")
+            ->modalSubmitAction(false)
+            ->modalCancelActionLabel('Cerrar')
+            ->modalContent(fn (StudentProgress $record) => view('components.thinking-field-progress', [
+                'fields' => app(AggregateThinkingFieldProgressAction::class)->execute($record->student),
+            ]));
     }
 
     protected function qualitativeLevel(StudentProgress $record): ?RubricLevel
