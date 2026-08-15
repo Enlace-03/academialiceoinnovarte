@@ -87,10 +87,16 @@ final class CompressUploadedImageAction
      * dónde debe quedar el resultado normalizado a .jpg. Si difieren, el
      * archivo original se borra tras comprimir -- no se dejan dos copias.
      *
+     * $maxWidth es opcional (default: MAX_WIDTH, 1600px, el ancho pensado
+     * para imágenes de contenido como galería/foro) -- un llamador puede
+     * pedir un ancho menor para casos que son un ícono, no una imagen de
+     * contenido (ej. foto de perfil de estudiante, 500px), sin duplicar el
+     * resto del pipeline de compresión/seguridad de memoria.
+     *
      * @throws ValidationException si la imagen es demasiado grande para
      *         procesarse con la memoria realmente disponible.
      */
-    public function execute(string $disk, string $sourcePath, string $targetPath): void
+    public function execute(string $disk, string $sourcePath, string $targetPath, int $maxWidth = self::MAX_WIDTH): void
     {
         $storage = Storage::disk($disk);
         $absolutePath = $storage->path($sourcePath);
@@ -101,7 +107,7 @@ final class CompressUploadedImageAction
             $this->assertFitsInAvailableMemory($absolutePath);
 
             $image = $this->images->decodePath($absolutePath);
-            $image->scaleDown(width: self::MAX_WIDTH);
+            $image->scaleDown(width: $maxWidth);
 
             $encoded = $image->encodeUsingFileExtension('jpg', quality: self::JPEG_QUALITY, strip: true);
 

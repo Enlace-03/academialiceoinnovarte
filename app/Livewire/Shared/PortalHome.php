@@ -6,12 +6,16 @@ namespace App\Livewire\Shared;
 
 use App\Models\User;
 use App\Modules\Assessment\Models\Submission;
+use App\Modules\Identity\Actions\RemoveStudentPhotoAction;
+use App\Modules\Identity\Actions\UploadStudentPhotoAction;
 use App\Modules\Project\Models\StudentPhaseSchedule;
 use App\Modules\Tracking\Actions\AggregateThinkingFieldProgressAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 
 /**
  * Placeholder post-login del panel fuera de Filament (Hito 3b-0) para
@@ -43,6 +47,17 @@ use Livewire\Component;
 #[Layout('layouts.portal')]
 class PortalHome extends Component
 {
+    use WithFileUploads;
+
+    /**
+     * Indexado por student_id: cada hijo tiene su propio selector de archivo
+     * independiente en la misma pantalla (lista de hijos, no un detalle por
+     * hijo) -- ver uploadPhoto()/portal-home.blade.php.
+     *
+     * @var array<int, \Livewire\Features\SupportFileUploads\TemporaryUploadedFile>
+     */
+    public array $photoUploads = [];
+
     public function mount(): void
     {
         if (auth()->user()->isStaff()) {
@@ -56,12 +71,49 @@ class PortalHome extends Component
             return new Collection();
         }
 
-        return auth()->user()->children()->orderBy('name')->get()
+        return auth()->user()->children()->with('schoolGrade.cycle')->orderBy('name')->get()
             ->map(fn (User $child) => [
                 'child' => $child,
+                'canManagePhoto' => ($child->schoolGrade?->cycle?->order ?? null) !== null && $child->schoolGrade->cycle->order <= 2,
                 'pending' => $this->pendingEvidencesFor($child),
                 'thinkingFieldProgress' => app(AggregateThinkingFieldProgressAction::class)->execute($child),
             ]);
+    }
+
+    /**
+     * La ValidationException que puede tirar UploadStudentPhotoAction (foto
+     * demasiado grande para procesar con la memoria disponible, subida
+     * bloqueada) llega con su propia clave interna ('photo'), no con la
+     * 'photoUploads.{id}' que este formulario usa -- si se dejara escapar
+     * tal cual, Livewire la agrega igual al error bag, pero bajo una clave
+     * que ningún @error de la vista escucha: el acudiente vería el botón
+     * "Guardar foto" sin reaccionar, sin ningún mensaje visible. Se
+     * re-lanza remapeada a la clave correcta para que sí aparezca.
+     */
+    public function uploadPhoto(int $childId): void
+    {
+        $child = auth()->user()->children()->whereKey($childId)->firstOrFail();
+
+        $this->validate([
+            "photoUploads.{$childId}" => 'required|image|max:8192',
+        ]);
+
+        try {
+            app(UploadStudentPhotoAction::class)->execute(auth()->user(), $child, $this->photoUploads[$childId]);
+        } catch (ValidationException $e) {
+            throw ValidationException::withMessages([
+                "photoUploads.{$childId}" => collect($e->errors())->flatten()->first(),
+            ]);
+        }
+
+        unset($this->photoUploads[$childId]);
+    }
+
+    public function removePhoto(int $childId): void
+    {
+        $child = auth()->user()->children()->whereKey($childId)->firstOrFail();
+
+        app(RemoveStudentPhotoAction::class)->execute(auth()->user(), $child);
     }
 
     private function pendingEvidencesFor(User $child): Collection

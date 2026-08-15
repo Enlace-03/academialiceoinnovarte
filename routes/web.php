@@ -132,6 +132,20 @@ Route::get('/entregas/adjuntos/{attachment:uuid}', function (SubmissionAttachmen
 })->middleware('auth')->name('submissions.attachments.show');
 
 /**
+ * Foto de perfil de estudiante -- mismo criterio de disco privado que las
+ * tres rutas de arriba. Autorización vía UserPolicy::viewPhoto(): personal o
+ * alguno de los acudientes del propio estudiante, nunca por adivinar la URL
+ * (uuid del estudiante, regla absoluta #5).
+ */
+Route::get('/estudiantes/{student:uuid}/foto', function (User $student) {
+    Gate::authorize('viewPhoto', $student);
+
+    abort_unless($student->hasPhoto(), 404);
+
+    return Storage::disk($student->photo_disk)->response($student->photo_path);
+})->middleware('auth')->name('students.photo.show');
+
+/**
  * Portal de estudiante (Hito 3b-1). role:student, no parent — el padre se
  * queda en el placeholder de PortalHome hasta que se diseñe su propio
  * dashboard (fuera de alcance de este hito). Los modelos se resuelven por

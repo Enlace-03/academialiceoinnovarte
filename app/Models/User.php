@@ -21,7 +21,10 @@ use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 use Spatie\Permission\Traits\HasRoles;
 
-#[Fillable(['name', 'email', 'password', 'group_id', 'school_grade_id', 'document_number', 'is_active'])]
+#[Fillable([
+    'name', 'email', 'password', 'group_id', 'school_grade_id', 'document_number', 'is_active',
+    'photo_disk', 'photo_path', 'photo_upload_blocked',
+])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable implements FilamentUser
 {
@@ -32,7 +35,13 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'photo_upload_blocked' => 'boolean',
         ];
+    }
+
+    public function hasPhoto(): bool
+    {
+        return $this->photo_path !== null;
     }
 
     public function uniqueIds(): array

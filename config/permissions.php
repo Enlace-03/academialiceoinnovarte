@@ -31,6 +31,7 @@ return [
             'students.create.scoped' => 'Crear estudiantes con alcance limitado (concedido por rector)',
             'students.view'          => 'Ver estudiantes',
             'students.update'        => 'Editar datos de estudiantes',
+            'students.photo.moderate' => 'Eliminar o bloquear la foto de perfil de estudiantes',
         ],
 
         'Institución' => [
@@ -95,7 +96,7 @@ return [
 
         'rector' => [
             'users.view', 'users.create', 'users.update', 'users.grant',
-            'students.create', 'students.view', 'students.update',
+            'students.create', 'students.view', 'students.update', 'students.photo.moderate',
             'institution.manage',
             'institution.settings.manage',
             'institution.cycles.manage', 'institution.thinking-fields.manage',
@@ -115,7 +116,7 @@ return [
 
         'coordinator' => [
             'users.view', 'users.create',
-            'students.view',
+            'students.view', 'students.photo.moderate',
             'institution.groups.manage', 'subjects.view',
             'projects.view.all', 'projects.create', 'projects.update.all',
             'phases.manage', 'resources.manage',
