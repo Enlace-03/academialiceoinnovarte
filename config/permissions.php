@@ -76,6 +76,25 @@ return [
             'gallery.publish'     => 'Publicar en la galería de fotos (institucional o de proyecto)',
             'gallery.update.own'  => 'Editar publicaciones propias de la galería',
             'gallery.update.all'  => 'Editar cualquier publicación de la galería',
+
+            // private_chats.view.all es deliberadamente de SOLO LECTURA -- nunca
+            // implica autoridad para escribir en un chat privado ajeno. Decisión de
+            // gobernanza, no un descuido: la Ley 1620 de 2013 (protección escolar
+            // contra la violencia, deber institucional de vigilar el trato de
+            // personal hacia estudiantes) exige que coordinación/rectoría puedan
+            // SUPERVISAR cualquier conversación estudiante-docente; el principio de
+            // minimización de datos de la Ley 1581 de 2012 (mismo criterio ya
+            // aplicado en RecordDataTreatmentConsentAction) exige que esa vigilancia
+            // no se convierta en autoridad operativa de facto. Escribir en un chat
+            // puntual sigue exigiendo autoridad REAL sobre ese proyecto
+            // (projects.update.all, o ser el docente responsable directo vía
+            // projects.update.own), nunca el solo hecho de poder leerlo -- ver
+            // PrivateChatThreadPolicy (view()/viewContext() vs. create()), probado en
+            // PrivateChatThreadPolicyTest::test_institutional_viewer_with_only_view_all_can_read_but_not_write.
+            // NO fusionar private_chats.view.all con ninguna autoridad de escritura
+            // en un preset futuro sin revisar esta nota primero.
+            'private_chats.view.all' => 'Ver cualquier chat privado estudiante-docente (visibilidad institucional)',
+            'private_chats.moderate' => 'Ocultar mensajes de chat privado de cualquier proyecto',
         ],
 
         'Sistema' => [
@@ -112,6 +131,11 @@ return [
             'avatar-messages.manage',
             'chat.moderate',
             'gallery.publish', 'gallery.update.all',
+            // Lectura institucional + moderación (protección infantil, Ley 1620) --
+            // la escritura real en un chat puntual ya viene dada arriba por
+            // projects.update.all, NO por estos dos permisos. Ver la nota junto a
+            // private_chats.view.all en 'catalog' antes de tocar esta línea.
+            'private_chats.view.all', 'private_chats.moderate',
         ],
 
         'coordinator' => [
@@ -125,6 +149,11 @@ return [
             'dashboard.institutional.view', 'students-at-risk.view.all',
             'chat.moderate',
             'gallery.publish', 'gallery.update.all',
+            // Lectura institucional + moderación (protección infantil, Ley 1620) --
+            // la escritura real en un chat puntual ya viene dada arriba por
+            // projects.update.all, NO por estos dos permisos. Ver la nota junto a
+            // private_chats.view.all en 'catalog' antes de tocar esta línea.
+            'private_chats.view.all', 'private_chats.moderate',
         ],
 
         'secretary' => [

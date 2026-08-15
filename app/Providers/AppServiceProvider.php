@@ -17,15 +17,19 @@ use App\Modules\Community\Events\ChatMessageSent;
 use App\Modules\Community\Events\ForumPostCreated;
 use App\Modules\Community\Events\ForumPostLiked;
 use App\Modules\Community\Events\ForumPostUnliked;
+use App\Modules\Community\Events\PrivateChatMessageSent;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Community\Models\ForumPost;
 use App\Modules\Community\Models\ForumThread;
 use App\Modules\Community\Models\GalleryPost;
+use App\Modules\Community\Models\PrivateChatThread;
 use App\Modules\Community\Policies\ChatMessagePolicy;
 use App\Modules\Community\Policies\ForumPostPolicy;
 use App\Modules\Community\Policies\ForumThreadPolicy;
 use App\Modules\Community\Policies\GalleryPostPolicy;
+use App\Modules\Community\Policies\PrivateChatThreadPolicy;
 use App\Modules\Communication\Listeners\NotifyForumReplyAuthor;
+use App\Modules\Communication\Listeners\NotifyPrivateChatParticipants;
 use App\Modules\Communication\Listeners\NotifyStudentOfEvaluation;
 use App\Modules\Communication\Listeners\NotifyTeacherOfForumActivity;
 use App\Modules\Communication\Listeners\NotifyTeacherOfNewSubmission;
@@ -83,6 +87,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(ForumPost::class, ForumPostPolicy::class);
         Gate::policy(ChatMessage::class, ChatMessagePolicy::class);
         Gate::policy(GalleryPost::class, GalleryPostPolicy::class);
+        Gate::policy(PrivateChatThread::class, PrivateChatThreadPolicy::class);
         Gate::before(fn ($user, $ability) => $user->hasRole('super_admin') ? true : null);
 
         Project::observe(ProjectObserver::class);
@@ -106,5 +111,6 @@ class AppServiceProvider extends ServiceProvider
         Event::listen(ForumPostCreated::class, NotifyTeacherOfForumActivity::class);
         Event::listen(SubmissionRegistered::class, NotifyTeacherOfNewSubmission::class);
         Event::listen(SubmissionEvaluated::class, NotifyStudentOfEvaluation::class);
+        Event::listen(PrivateChatMessageSent::class, NotifyPrivateChatParticipants::class);
     }
 }

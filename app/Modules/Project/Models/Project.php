@@ -7,6 +7,7 @@ namespace App\Modules\Project\Models;
 use App\Models\User;
 use App\Modules\Community\Models\ForumPost;
 use App\Modules\Community\Models\ForumThread;
+use App\Modules\Community\Models\PrivateChatThread;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\ThinkingField;
 use App\Modules\Tracking\Models\StudentProgress;
@@ -77,6 +78,11 @@ class Project extends Model
     public function forumThreads(): HasMany
     {
         return $this->hasMany(ForumThread::class);
+    }
+
+    public function privateChatThreads(): HasMany
+    {
+        return $this->hasMany(PrivateChatThread::class);
     }
 
     /**
