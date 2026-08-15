@@ -77,10 +77,14 @@
                     @endif
 
                     @if ($entry['thinkingFieldProgress']->isNotEmpty())
-                        <div class="mt-3 mb-4">
-                            <h3 class="text-xs font-semibold uppercase text-gray-400 mb-2">Avance por campo de pensamiento</h3>
+                        <a href="{{ route('parent.child.fields', $entry['child']) }}" wire:navigate
+                           class="block mt-3 mb-4 -mx-2 px-2 py-1 rounded hover:bg-gray-50 transition-colors">
+                            <div class="flex items-center justify-between mb-2">
+                                <h3 class="text-xs font-semibold uppercase text-gray-400">Avance por campo de pensamiento</h3>
+                                <span class="text-xs font-medium text-emerald-700">Ver detalle &rarr;</span>
+                            </div>
                             <x-thinking-field-progress :fields="$entry['thinkingFieldProgress']" />
-                        </div>
+                        </a>
                     @endif
 
                     @if ($entry['pending']->isEmpty())

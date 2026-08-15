@@ -1,5 +1,9 @@
 <?php
 
+use App\Livewire\Parent\ChildEvidenceShow;
+use App\Livewire\Parent\ChildFieldProjects;
+use App\Livewire\Parent\ChildProjectShow;
+use App\Livewire\Parent\ChildThinkingFields;
 use App\Livewire\Shared\Gallery;
 use App\Livewire\Shared\Login;
 use App\Livewire\Shared\PortalHome;
@@ -182,4 +186,43 @@ Route::middleware(['auth', 'expire-delivered-session', 'role:student'])->group(f
         ->name('student.evidence.show')
         ->withoutScopedBindings();
     Route::get('/mi-grupo/chat', GroupChat::class)->name('student.chat');
+});
+
+/**
+ * Drill-down del acudiente (campo de pensamiento → proyectos → detalle de
+ * proyecto/evidencia), en modo estrictamente de solo lectura. role:parent,
+ * no student -- simétrico al bloque de arriba.
+ *
+ * {child:uuid} resuelto por su propio uuid (regla absoluta #5, igual que
+ * {project:uuid}/{evidence:uuid} en el bloque de estudiante) -- nunca por
+ * el id autoincremental. isGuardianOf($child) se re-verifica en el
+ * mount() de CADA componente, no solo acá ni solo en la Policy más
+ * profunda -- mismo criterio de defensa en profundidad que
+ * EvidenceShow::mount() ya aplica con la pertenencia evidencia↔proyecto:
+ * un acudiente de OTRA familia con el uuid correcto de un hijo ajeno no
+ * debe pasar ningún nivel, no solo el primero.
+ *
+ * withoutScopedBindings() en las tres rutas con más de un parámetro de
+ * modelo ({child}+{field}, {child}+{project}, {child}+{project}+{evidence}):
+ * User no tiene una relación projects()/thinkingFields() adivinable por
+ * convención de nombre desde la que Laravel pudiera intentar el scoping
+ * automático -- cada mount() resuelve y verifica la relación real a mano,
+ * mismo motivo que ya exige withoutScopedBindings() en las rutas de
+ * estudiante de arriba.
+ */
+Route::middleware(['auth', 'expire-delivered-session', 'role:parent'])->group(function () {
+    Route::get('/hijos/{child:uuid}/campos', ChildThinkingFields::class)
+        ->name('parent.child.fields');
+
+    Route::get('/hijos/{child:uuid}/campos/{field:slug}/proyectos', ChildFieldProjects::class)
+        ->name('parent.child.field.projects')
+        ->withoutScopedBindings();
+
+    Route::get('/hijos/{child:uuid}/proyectos/{project:uuid}', ChildProjectShow::class)
+        ->name('parent.child.project.show')
+        ->withoutScopedBindings();
+
+    Route::get('/hijos/{child:uuid}/proyectos/{project:uuid}/evidencias/{evidence:uuid}', ChildEvidenceShow::class)
+        ->name('parent.child.evidence.show')
+        ->withoutScopedBindings();
 });
