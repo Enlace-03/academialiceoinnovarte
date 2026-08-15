@@ -92,7 +92,8 @@ class PortalHome extends Component
      */
     public function uploadPhoto(int $childId): void
     {
-        $child = auth()->user()->children()->whereKey($childId)->firstOrFail();
+        $child = User::findOrFail($childId);
+        abort_unless(auth()->user()->isGuardianOf($child), 404);
 
         $this->validate([
             "photoUploads.{$childId}" => 'required|image|max:8192',
@@ -111,7 +112,8 @@ class PortalHome extends Component
 
     public function removePhoto(int $childId): void
     {
-        $child = auth()->user()->children()->whereKey($childId)->firstOrFail();
+        $child = User::findOrFail($childId);
+        abort_unless(auth()->user()->isGuardianOf($child), 404);
 
         app(RemoveStudentPhotoAction::class)->execute(auth()->user(), $child);
     }

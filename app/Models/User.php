@@ -76,6 +76,20 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Extraído de la duplicación real encontrada en UserPolicy (viewPhoto()
+     * e isEligibleGuardianForPhoto(), ambas con el mismo whereKey()->exists())
+     * y en PortalHome (uploadPhoto()/removePhoto()) -- único punto de verdad
+     * para "¿es este usuario acudiente de este estudiante?", reutilizado por
+     * Policies y por la verificación explícita a mano en cada componente del
+     * drill-down del acudiente (defensa en profundidad, mismo patrón que
+     * ForumThreadShow/GroupChat con hasRole('student')).
+     */
+    public function isGuardianOf(User $student): bool
+    {
+        return $this->children()->whereKey($student->id)->exists();
+    }
+
+    /**
      * Un estudiante accede a un proyecto si su grado (school_grade) pertenece
      * al mismo ciclo que el proyecto — un proyecto es "del ciclo", no de un
      * grupo puntual, así que todos los grados de ese ciclo comparten acceso.

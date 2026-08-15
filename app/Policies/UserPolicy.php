@@ -79,7 +79,7 @@ class UserPolicy
      */
     public function viewPhoto(User $user, User $student): bool
     {
-        return $user->isStaff() || $user->children()->whereKey($student->id)->exists();
+        return $user->isStaff() || $user->isGuardianOf($student);
     }
 
     private function isEligibleGuardianForPhoto(User $user, User $student): bool
@@ -88,6 +88,6 @@ class UserPolicy
 
         return $cycleOrder !== null
             && $cycleOrder <= 2
-            && $user->children()->whereKey($student->id)->exists();
+            && $user->isGuardianOf($student);
     }
 }

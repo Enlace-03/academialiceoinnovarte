@@ -21,6 +21,14 @@ use App\Modules\Project\Policies\ProjectPolicy;
  * aquí cualquier estudiante del mismo ciclo podría ver la entrega (y la
  * retroalimentación) de OTRO estudiante, no solo la propia.
  *
+ * Rama acudiente (drill-down): $submission->student_id ya identifica al
+ * hijo objetivo directamente -- a diferencia de ProjectPolicy::view(), no
+ * hace falta un método aparte tipo viewAsGuardian() con un parámetro extra,
+ * el propio submission trae el contexto. Necesaria en la práctica para que
+ * la ruta compartida submissions.attachments.show (que autoriza
+ * exclusivamente contra esta Policy) sirva también los adjuntos ya
+ * entregados dentro de ChildEvidenceShow, no solo dentro de EvidenceShow.
+ *
  * create()/update() (Hito 3b-3, flujo de entrega del propio estudiante):
  * create() se autoriza contra ExpectedEvidence, no contra Submission -- la
  * primera entrega de un estudiante para esa evidencia todavía no tiene fila.
@@ -33,6 +41,10 @@ class SubmissionPolicy
     public function view(User $user, Submission $submission): bool
     {
         if ($user->id === $submission->student_id) {
+            return true;
+        }
+
+        if ($user->hasRole('parent') && $user->isGuardianOf($submission->student)) {
             return true;
         }
 

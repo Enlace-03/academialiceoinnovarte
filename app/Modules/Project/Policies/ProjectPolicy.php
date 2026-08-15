@@ -62,6 +62,26 @@ class ProjectPolicy
             || ($user->hasPermissionTo('projects.view.own') && $project->created_by_user_id === $user->id);
     }
 
+    /**
+     * Rama acudiente (drill-down del dashboard de acudiente): mismo criterio
+     * de ciclo+publicado que la rama student de view(), pero evaluado contra
+     * el HIJO objetivo, nunca contra el usuario autenticado -- el acudiente
+     * mismo no tiene school_grade/cycle propio. Método aparte, no una rama
+     * más de view(), por la misma razón que viewAsStaff ya es aparte: view()
+     * solo recibe (User $user, Project $project), sin forma de pasarle el
+     * hijo objetivo. Se llama explícitamente vía
+     * $this->authorize('viewAsGuardian', [$project, $child]) -- nunca se
+     * confía solo en esta Policy: cada componente del drill-down re-verifica
+     * $user->isGuardianOf($child) a mano también (defensa en profundidad).
+     */
+    public function viewAsGuardian(User $user, Project $project, User $child): bool
+    {
+        return $user->hasRole('parent')
+            && $user->isGuardianOf($child)
+            && $child->canAccessProject($project)
+            && $project->status === 'published';
+    }
+
     public function create(User $user): bool
     {
         return $user->hasPermissionTo('projects.create');
