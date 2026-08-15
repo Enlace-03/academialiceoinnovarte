@@ -327,6 +327,16 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** al especificar el hito de Boletines — requiere además decidir el disparador de cada variante (parcial/final/retiro), el formato de salida, y quién lo genera (¿el propio docente desde `/academia`? ¿un job programado?) — nada de eso está definido todavía, solo el cálculo cualitativo agregado que este punto documenta para no perderlo.
 
+## 31. Sin fixture centralizado de cuentas de prueba (`@test.local`)
+
+**Estado:** identificado al investigar por qué `rectora.prueba@test.local` tenía una contraseña distinta al resto de las cuentas de prueba (hito de foto de perfil de estudiante) — no resuelto, solo documentado.
+
+**Contexto:** a lo largo de esta sesión se crearon siete cuentas de prueba (`docente.prueba`, `estudiante.tercero`, `estudiante.prueba`, `acudiente.prueba`, `rectora.prueba`, y dos más puntuales para el hito de foto de perfil) con el dominio `@test.local`, todas ad-hoc vía `php artisan tinker` en momentos distintos — **ninguna vive en un seeder**. Se confirmó grepeando `app/` y `database/`: cero referencias a `test.local` en el código. La contraseña `"password"` fue una convención repetida la mayoría de las veces, nunca garantizada — así fue como `rectora.prueba` terminó con una distinta sin que nada lo detectara, hasta que un login real falló.
+
+**Por qué importa:** no es solo la molestia puntual de una contraseña — sin un fixture centralizado, reconstruir el entorno de pruebas de dev (o dárselo a alguien más del equipo) depende de memoria de sesiones de chat pasadas, no de algo reproducible con un comando. Cada cuenta nueva creada ad-hoc es una oportunidad más de inconsistencia silenciosa como esta.
+
+**Cuándo retomarlo:** si el equipo crece más allá de Diego, o si reconstruir el entorno de dev se vuelve una tarea frecuente. La solución más simple sería un `DevFixturesSeeder` (o similar, fuera de `DatabaseSeeder` para no correr en producción) que cree estas cuentas con `firstOrCreate` y contraseña fija — no urgente hoy porque el entorno de dev actual ya tiene las cuentas que hacen falta.
+
 ---
 
 ## Notas de infraestructura (resueltas)
