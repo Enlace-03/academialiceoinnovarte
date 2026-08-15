@@ -18,7 +18,7 @@ NO es un LMS tradicional — el concepto central es **Proyecto ABP**, no curso/l
 | Admin | `/admin` | admin | Filament — azul |
 | Académico | `/academia` | rector, teacher | Filament — verde |
 | Estudiante | `/` | student | Livewire + Blade |
-| Padre | `/familia` | parent | Livewire + Blade |
+| Padre | `/` (compartido con estudiante; drill-down propio en `/hijos/...`) | parent | Livewire + Blade |
 
 ## Estructura de carpetas clave
 ```
