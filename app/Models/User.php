@@ -103,6 +103,26 @@ class User extends Authenticatable implements FilamentUser
     }
 
     /**
+     * Ciclos 1-2 (Exploratorio, Conceptual): único punto de verdad para
+     * decidir estrellas vs. barra de avance en el portal (Hito de estrellas)
+     * -- consultado desde cada vista de estudiante/acudiente que hoy muestra
+     * progress_pct, nunca duplicado por vista. Deliberadamente NO reutilizado
+     * por PortalHome::canManagePhoto (mismo umbral de ciclo hoy, pero es una
+     * regla de negocio distinta -- elegibilidad de subida de foto, no
+     * representación visual de avance -- que podría divergir de este umbral
+     * en el futuro sin relación alguna).
+     *
+     * Sin grado asignado, no es ciclo temprano (fail-closed hacia la barra
+     * numérica, nunca asume "primaria" sin dato real).
+     */
+    public function isInEarlyCycle(): bool
+    {
+        $cycleOrder = $this->schoolGrade?->cycle?->order;
+
+        return $cycleOrder !== null && $cycleOrder <= 2;
+    }
+
+    /**
      * Panel-level access gate. 'admin' is restricted to super_admin and to
      * anyone holding a permission whose name starts with one of the prefixes
      * in config('permissions.admin_panel_permission_prefixes') (users.* /

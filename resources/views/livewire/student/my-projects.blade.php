@@ -4,7 +4,7 @@
     @if ($thinkingFieldProgress->isNotEmpty())
         <div class="bg-white rounded-lg shadow p-4 mb-6">
             <h2 class="text-sm font-medium text-gray-700 mb-4">Avance por campo de pensamiento</h2>
-            <x-thinking-field-progress :fields="$thinkingFieldProgress" />
+            <x-thinking-field-progress :fields="$thinkingFieldProgress" :use-stars="auth()->user()->isInEarlyCycle()" />
         </div>
     @endif
 

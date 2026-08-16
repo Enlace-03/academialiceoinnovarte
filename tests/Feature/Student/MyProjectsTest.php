@@ -94,7 +94,11 @@ class MyProjectsTest extends TestCase
      */
     public function test_shows_the_thinking_field_progress_block(): void
     {
-        $cycle = Cycle::factory()->create();
+        // order=3 (ciclo tardío) explícito: este test verifica la barra
+        // numérica de siempre -- el reemplazo por estrellas en ciclos 1-2
+        // tiene su propia cobertura dedicada (Hito de estrellas). Sin
+        // fijarlo, Cycle::factory() cae en un order aleatorio 1-4.
+        $cycle = Cycle::factory()->create(['order' => 3]);
         $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
         $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
 
@@ -114,6 +118,34 @@ class MyProjectsTest extends TestCase
         $response->assertSee('Avance por campo de pensamiento');
         $response->assertSee('Campo de prueba');
         $response->assertSee('42%');
+    }
+
+    /**
+     * Hito de estrellas: estudiante de ciclo 1-2 ve <x-progress-stars> en
+     * este mismo bloque, nunca la barra ni el "{{ pct }}%" al mismo tiempo.
+     */
+    public function test_student_in_early_cycle_sees_stars_in_the_thinking_field_progress_block(): void
+    {
+        $earlyCycle = Cycle::factory()->create(['order' => 1]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+
+        $field = ThinkingField::factory()->create(['name' => 'Campo temprano']);
+        $project = Project::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $project->thinkingFields()->attach($field->id);
+        StudentProgress::factory()->create([
+            'student_id' => $student->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertSee('aria-label="47% de avance"', false);
+        $response->assertDontSee('<span class="text-gray-500">47%</span>', false);
+        $response->assertDontSee('bg-emerald-500 h-2.5 rounded-full', false);
     }
 
     public function test_student_without_school_grade_sees_an_empty_list(): void

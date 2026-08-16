@@ -14,6 +14,7 @@ use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Guide;
 use App\Modules\Project\Models\Project;
 use App\Modules\Project\Models\Resource;
+use App\Modules\Tracking\Models\StudentProgress;
 use Database\Seeders\RoleLevelSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RubricLevelSeeder;
@@ -156,6 +157,56 @@ class ChildProjectShowTest extends TestCase
         $this->actingAs($this->guardian)
             ->get(route('parent.child.project.show', ['child' => $this->child, 'project' => $projectInOtherCycle]))
             ->assertForbidden();
+    }
+
+    /**
+     * Hito de estrellas: hijo de ciclo 1-2 ve <x-progress-stars>, nunca la
+     * barra ni el "{{ pct }}%" al mismo tiempo.
+     */
+    public function test_guardian_sees_stars_for_a_child_in_an_early_cycle(): void
+    {
+        $earlyCycle = Cycle::factory()->create(['order' => 1]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $child = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $this->guardian->children()->attach($child->id, ['relationship' => 'madre']);
+        $project = Project::factory()->create(['cycle_id' => $earlyCycle->id]);
+        StudentProgress::factory()->create([
+            'student_id' => $child->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        $response = $this->actingAs($this->guardian)
+            ->get(route('parent.child.project.show', ['child' => $child, 'project' => $project]));
+
+        $response->assertOk();
+        $response->assertSee('aria-label="47% de avance"', false);
+        $response->assertDontSee('<span class="text-gray-500">47%</span>', false);
+        $response->assertDontSee('bg-emerald-500 h-2.5 rounded-full', false);
+    }
+
+    public function test_guardian_still_sees_the_numeric_bar_for_a_child_in_a_late_cycle(): void
+    {
+        $lateCycle = Cycle::factory()->create(['order' => 4]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $lateCycle->id]);
+        $child = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $this->guardian->children()->attach($child->id, ['relationship' => 'madre']);
+        $project = Project::factory()->create(['cycle_id' => $lateCycle->id]);
+        StudentProgress::factory()->create([
+            'student_id' => $child->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        $response = $this->actingAs($this->guardian)
+            ->get(route('parent.child.project.show', ['child' => $child, 'project' => $project]));
+
+        $response->assertOk();
+        $response->assertSee('<span class="text-gray-500">47%</span>', false);
+        $response->assertSee('bg-emerald-500 h-2.5 rounded-full', false);
+        $response->assertDontSee('aria-label="47% de avance"', false);
     }
 
     public function test_student_cannot_access_the_route_middleware(): void

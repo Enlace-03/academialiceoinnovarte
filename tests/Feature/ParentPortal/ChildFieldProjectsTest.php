@@ -39,7 +39,13 @@ class ChildFieldProjectsTest extends TestCase
         $this->seed(RubricLevelSeeder::class);
 
         $this->guardian = User::factory()->create()->assignRole('parent');
-        $this->cycle = Cycle::factory()->create();
+        // order=3 (ciclo tardío) explícito: esta clase verifica la barra
+        // numérica de siempre -- el reemplazo por estrellas en ciclos 1-2
+        // tiene su propia cobertura dedicada (Hito de estrellas). Sin
+        // fijarlo, Cycle::factory() cae en un order aleatorio 1-4 y
+        // test_lists_published_projects_touching_the_field_with_progress_and_level
+        // queda intermitente (assertSee('55%')).
+        $this->cycle = Cycle::factory()->create(['order' => 3]);
         $grade = SchoolGrade::factory()->create(['cycle_id' => $this->cycle->id]);
         $this->child = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
         $this->guardian->children()->attach($this->child->id, ['relationship' => 'madre']);
@@ -69,6 +75,38 @@ class ChildFieldProjectsTest extends TestCase
         $response->assertSee('Huerta escolar');
         $response->assertSee('55%');
         $response->assertSee('Logro esperado');
+    }
+
+    /**
+     * Hito de estrellas: hijo de ciclo 1-2 ve <x-progress-stars> por
+     * proyecto en esta lista, nunca la barra ni el "{{ pct }}%" al mismo
+     * tiempo. Cycle/child propios (no $this->cycle/$this->child, fijados a
+     * ciclo tardío en setUp() a propósito).
+     */
+    public function test_guardian_sees_stars_for_a_child_in_an_early_cycle(): void
+    {
+        $guardian = User::factory()->create()->assignRole('parent');
+        $earlyCycle = Cycle::factory()->create(['order' => 1]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $child = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $guardian->children()->attach($child->id, ['relationship' => 'madre']);
+        $field = ThinkingField::factory()->create();
+
+        $project = Project::factory()->create(['cycle_id' => $earlyCycle->id, 'title' => 'Huerta escolar temprana']);
+        $project->thinkingFields()->attach($field->id);
+        StudentProgress::factory()->create([
+            'student_id' => $child->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        $response = $this->actingAs($guardian)
+            ->get(route('parent.child.field.projects', ['child' => $child, 'field' => $field]));
+
+        $response->assertOk();
+        $response->assertSee('aria-label="47% de avance"', false);
+        $response->assertDontSee('bg-emerald-500 h-2 rounded-full', false);
     }
 
     public function test_project_not_touching_the_field_is_not_listed(): void

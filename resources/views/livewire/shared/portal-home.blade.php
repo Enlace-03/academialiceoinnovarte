@@ -83,7 +83,7 @@
                                 <h3 class="text-xs font-semibold uppercase text-gray-400">Avance por campo de pensamiento</h3>
                                 <span class="text-xs font-medium text-emerald-700">Ver detalle &rarr;</span>
                             </div>
-                            <x-thinking-field-progress :fields="$entry['thinkingFieldProgress']" />
+                            <x-thinking-field-progress :fields="$entry['thinkingFieldProgress']" :use-stars="$entry['child']->isInEarlyCycle()" />
                         </a>
                     @endif
 

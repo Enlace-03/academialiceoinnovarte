@@ -15,6 +15,8 @@
 
     <h1 class="text-xl font-semibold mt-2">{{ $field->name }}</h1>
 
+    @php $useStars = $child->isInEarlyCycle(); @endphp
+
     @if ($projects->isEmpty())
         <p class="text-sm text-gray-500 mt-4">
             Todavía no hay proyectos publicados que toquen este campo para {{ $child->name }}.
@@ -39,13 +41,18 @@
                     </div>
 
                     <div class="mt-3">
-                        <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
-                            <span>Avance</span>
-                            <span>{{ $summary['pct'] }}%</span>
-                        </div>
-                        <div class="w-full bg-gray-200 rounded-full h-2">
-                            <div class="bg-emerald-500 h-2 rounded-full transition-all" style="width: {{ $summary['pct'] }}%"></div>
-                        </div>
+                        @if ($useStars)
+                            <div class="text-xs text-gray-500 mb-1">Avance</div>
+                            <x-progress-stars :percent="$summary['pct']" />
+                        @else
+                            <div class="flex items-center justify-between text-xs text-gray-500 mb-1">
+                                <span>Avance</span>
+                                <span>{{ $summary['pct'] }}%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-emerald-500 h-2 rounded-full transition-all" style="width: {{ $summary['pct'] }}%"></div>
+                            </div>
+                        @endif
                     </div>
                 </a>
             @endforeach

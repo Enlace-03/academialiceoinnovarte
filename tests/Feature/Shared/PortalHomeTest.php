@@ -84,7 +84,12 @@ class PortalHomeTest extends TestCase
     {
         $guardian = User::factory()->create()->assignRole('parent');
 
-        $cycle = Cycle::factory()->create();
+        // order=3 (Contextual, ciclo tardío) explícito -- este test verifica
+        // la barra numérica de siempre; el reemplazo por estrellas en
+        // ciclos 1-2 tiene su propia cobertura dedicada (ver Hito de
+        // estrellas). Sin fijarlo, Cycle::factory() cae en un order
+        // aleatorio 1-4 y este test queda intermitente.
+        $cycle = Cycle::factory()->create(['order' => 3]);
         $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
         $child = User::factory()->create(['name' => 'Estudiante Ejemplo', 'school_grade_id' => $grade->id])->assignRole('student');
         $guardian->children()->attach($child->id, ['relationship' => 'padre']);
@@ -103,6 +108,37 @@ class PortalHomeTest extends TestCase
             ->assertSee('Avance por campo de pensamiento')
             ->assertSee('Campo de prueba')
             ->assertSee('65%');
+    }
+
+    /**
+     * Hito de estrellas: un hijo de ciclo 1-2 (Exploratorio, Conceptual) se
+     * ve con <x-progress-stars>, nunca la barra ni el "{{ pct }}%" al mismo
+     * tiempo -- User::isInEarlyCycle() evaluado sobre el HIJO, no sobre el
+     * acudiente.
+     */
+    public function test_guardian_sees_stars_instead_of_the_bar_for_a_child_in_an_early_cycle(): void
+    {
+        $guardian = User::factory()->create()->assignRole('parent');
+
+        $earlyCycle = Cycle::factory()->create(['order' => 2]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $child = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $guardian->children()->attach($child->id, ['relationship' => 'padre']);
+
+        $field = ThinkingField::factory()->create(['name' => 'Campo temprano']);
+        $project = Project::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $project->thinkingFields()->attach($field->id);
+        StudentProgress::factory()->create([
+            'student_id' => $child->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        Livewire::actingAs($guardian)->test(PortalHome::class)
+            ->assertSee('aria-label="47% de avance"', false)
+            ->assertDontSee('<span class="text-gray-500">47%</span>', false)
+            ->assertDontSee('bg-emerald-500 h-2.5 rounded-full', false);
     }
 
     /**

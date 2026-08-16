@@ -77,4 +77,48 @@ class StudentProgressRelationManagerTest extends TestCase
         $this->assertStringContainsString($field->name, $modalContent);
         $this->assertStringContainsString('60%', $modalContent);
     }
+
+    /**
+     * Hito de estrellas: /academia se queda con la barra numérica en TODOS
+     * los casos, sin excepción -- ni siquiera para un estudiante de ciclo 1
+     * (Exploratorio). thinkingFieldProgressAction() nunca pasa useStars,
+     * así que <x-thinking-field-progress> cae en su default (false) --
+     * confirmado acá con datos reales de un estudiante de ciclo temprano,
+     * no solo por lectura del código.
+     */
+    public function test_teacher_still_sees_the_numeric_bar_even_for_a_student_in_an_early_cycle(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(RoleLevelSeeder::class);
+
+        $teacher = User::factory()->create()->assignRole('teacher');
+        $this->actingAs($teacher);
+        Filament::setCurrentPanel(Filament::getPanel('academic'));
+
+        $earlyCycle = Cycle::factory()->create(['order' => 1]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+
+        $field = ThinkingField::factory()->create();
+        $project = Project::factory()->create(['cycle_id' => $earlyCycle->id, 'created_by_user_id' => $teacher->id]);
+        $project->thinkingFields()->attach($field->id);
+        $progressRow = StudentProgress::factory()->create([
+            'student_id' => $student->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        $manager = Livewire::test(StudentProgressRelationManager::class, [
+            'ownerRecord' => $project,
+            'pageClass' => EditProject::class,
+        ]);
+
+        $manager->mountTableAction('thinkingFieldProgress', $progressRow);
+
+        $modalContent = (string) $manager->instance()->getMountedAction()->getModalContent();
+
+        $this->assertStringContainsString('47%', $modalContent);
+        $this->assertStringNotContainsString('aria-label="47% de avance"', $modalContent);
+    }
 }

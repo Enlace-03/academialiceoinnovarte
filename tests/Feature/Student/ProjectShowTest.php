@@ -14,6 +14,7 @@ use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Guide;
 use App\Modules\Project\Models\Project;
 use App\Modules\Project\Models\Resource;
+use App\Modules\Tracking\Models\StudentProgress;
 use Database\Seeders\RoleLevelSeeder;
 use Database\Seeders\RolePermissionSeeder;
 use Database\Seeders\RubricLevelSeeder;
@@ -181,5 +182,55 @@ class ProjectShowTest extends TestCase
         $status = $component->instance()->evidenceStatus($evidence);
 
         $this->assertSame('pendiente', $status['status']);
+    }
+
+    /**
+     * Hito de estrellas: ciclos 1-2 (Exploratorio, Conceptual) ven
+     * <x-progress-stars>, nunca la barra ni el "{{ pct }}%" al mismo tiempo
+     * -- User::isInEarlyCycle(). 47% (no múltiplo de 10) confirma también
+     * el relleno parcial vía aria-label.
+     */
+    public function test_student_in_early_cycle_sees_stars_instead_of_the_bar(): void
+    {
+        $earlyCycle = Cycle::factory()->create(['order' => 1]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $project = Project::factory()->create(['cycle_id' => $earlyCycle->id]);
+        StudentProgress::factory()->create([
+            'student_id' => $student->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.show', $project->uuid));
+
+        $response->assertOk();
+        // Estrellas presentes (aria-label con el % real, para lectores de
+        // pantalla) y NUNCA la barra ni su "47%" visible al mismo tiempo.
+        $response->assertSee('aria-label="47% de avance"', false);
+        $response->assertDontSee('<span class="text-gray-500">47%</span>', false);
+        $response->assertDontSee('bg-emerald-500 h-2.5 rounded-full', false);
+    }
+
+    public function test_student_in_late_cycle_still_sees_the_numeric_bar(): void
+    {
+        $lateCycle = Cycle::factory()->create(['order' => 3]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $lateCycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $project = Project::factory()->create(['cycle_id' => $lateCycle->id]);
+        StudentProgress::factory()->create([
+            'student_id' => $student->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 47,
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.show', $project->uuid));
+
+        $response->assertOk();
+        $response->assertSee('<span class="text-gray-500">47%</span>', false);
+        $response->assertSee('bg-emerald-500 h-2.5 rounded-full', false);
+        $response->assertDontSee('aria-label="47% de avance"', false);
     }
 }
