@@ -38,7 +38,7 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** decidir si se elimina la tabla o se retoma como mecanismo de delegación con alcance más adelante — evaluando primero si el techo de delegación existente (`HasDelegationCeiling`, permisos completos sin scope por grupo) ya cubre el caso de uso real antes de resucitar un segundo sistema paralelo.
 
-## 5. Relation Manager espejo del lado acudiente ("Estudiantes a cargo")
+## 5b. Relation Manager espejo del lado acudiente ("Estudiantes a cargo")
 
 **Estado:** no implementado — alcance explícitamente diferido.
 
@@ -82,21 +82,19 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Cuándo retomarlo:** si el volumen real de columnas por categoría lo justifica (ej. cuando se agreguen columnas específicas de acudientes como "hijos a cargo").
 
-## 10. Inventario de scaffolding de BD pre-creado para módulos futuros (Assessment/Community/Tracking/Prediction/Avatar)
+## 10. Inventario de scaffolding de BD pre-creado para módulos futuros (Prediction/Avatar)
 
-**Estado:** referencia obligatoria antes de especificar cada hito correspondiente — no es deuda técnica, es un mapa para no repetir el conflicto de orden de migraciones del Hito 1C.
+**Estado:** corregido — Assessment (Hito 2), Community (Hito 3a) y Tracking (Hito 4) ya tienen código de aplicación real (Models/Actions/Policies en `app/Modules/`, cada uno con su propia auditoría hecha en su momento) y se sacan de este inventario. Solo quedan **Prediction** y **Avatar** como scaffolding puro sin ningún Model/Action/Policy — referencia obligatoria antes de especificar esos dos hitos, no es deuda técnica, es un mapa para no repetir el conflicto de orden de migraciones del Hito 1C.
 
-**Contexto:** además del módulo `Project` (Hito 1C, con código de aplicación real), existen migraciones de scaffolding inicial con tablas ya creadas pero **cero Models/Actions/Policies** en `app/Modules/` — mismo patrón que causó el conflicto de `cycles` en este hito (esquema adelantado, diseño potencialmente desactualizado frente a decisiones tomadas después).
+**Contexto:** además del módulo `Project` (Hito 1C) y de Assessment/Community/Tracking (ya con código real, ver arriba), queda una migración de scaffolding inicial con tablas ya creadas pero **cero Models/Actions/Policies** en `app/Modules/` — mismo patrón que causó el conflicto de `cycles` en el Hito 1C (esquema adelantado, diseño potencialmente desactualizado frente a decisiones tomadas después).
 
 | Migración | Tablas | Módulo(s) | Notas |
 |---|---|---|---|
-| `2027_01_01_000040_create_assessment_tables.php` | `rubrics`, `rubric_criteria`, `submissions`, `evaluations`, `evaluation_results`, `observations` | Assessment | FK diferida ya activa: `expected_evidences.rubric_id` → `rubrics.id`. `observations.project_id` es nullable. |
-| `2027_01_01_000050_create_community_and_events_tables.php` | `forum_threads`, `forum_posts`, `chat_messages`, `learning_events` (SQL crudo, particionada, sin FKs) | Community + Tracking | `forum_threads.phase_id` es nullable. |
-| `2027_01_01_000060_create_tracking_prediction_avatar_tables.php` | `student_progress`, `student_metrics`, `performance_snapshots`, `predictions`, `risk_alerts`, `avatar_messages`, `avatar_interactions`, `onboarding_steps` | Tracking + Prediction + Avatar | `student_progress.phase_id` y `risk_alerts.project_id` son nullable. |
+| `2027_01_01_000060_create_tracking_prediction_avatar_tables.php` | `predictions`, `risk_alerts`, `avatar_messages`, `avatar_interactions`, `onboarding_steps` | Prediction + Avatar | `risk_alerts.project_id` es nullable. Las tablas de Tracking de esta misma migración (`student_progress`, `student_metrics`, `performance_snapshots`) ya tienen código real (Hito 4) y no forman parte de este inventario. |
 
 `Analytics` y `Communication` (notificaciones) no tienen ningún scaffolding — ni siquiera tabla `notifications` — arrancan desde cero.
 
-**Cuándo retomarlo:** al especificar el Hito 2 (Assessment) y sucesivos — verificar el diseño de cada tabla contra las decisiones tomadas hasta ese momento (mismo chequeo que reveló que `projects`/`phases`/etc. estaban desactualizadas frente a la decisión de `Cycle`) *antes* de escribir modelos/Actions encima, no después.
+**Cuándo retomarlo:** al especificar el hito de Prediction o el de Avatar — verificar el diseño de cada tabla contra las decisiones tomadas hasta ese momento (mismo chequeo que reveló que `projects`/`phases`/etc. estaban desactualizadas frente a la decisión de `Cycle`) *antes* de escribir modelos/Actions encima, no después.
 
 ## 11. Criterio de desempate de `Evaluation::consolidatedLevel()` (Hito 2)
 
@@ -128,13 +126,15 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 ## 13. Acudiente actuando en nombre de un estudiante de ciclos 1-2 (transición-5°)
 
-**Estado:** diseño pendiente, explícitamente fuera de alcance del Hito 3b-0.
+**Estado:** ✅ resuelto por diseño — la pregunta original quedó sin objeto, no sin resolver.
 
-**Contexto:** el Hito 3b-0 solo da cuenta propia (login) a estudiantes de ciclos 3-4 (6°-9°). Para ciclos 1-2, es el acudiente quien se autentica con su propia cuenta y accedería a la vista del hijo en su nombre — no se construyó ningún flujo alterno sin contraseña (PIN, selección de avatar) para que el estudiante pequeño entre directamente; eso queda fuera de alcance a propósito. Las relaciones `User::children()`/`User::guardians()` ya existen y están probadas, y son la base necesaria para resolver esto — no se requiere ningún cambio de esquema para empezar el diseño.
+**Contexto (histórico):** el Hito 3b-0 solo daba cuenta propia (login) a estudiantes de ciclos 3-4 (6°-9°). Para ciclos 1-2, no se construyó ningún flujo alterno sin contraseña (PIN, selección de avatar) para que el estudiante pequeño entre directamente; eso quedó fuera de alcance a propósito. Las relaciones `User::children()`/`User::guardians()` ya existían y estaban probadas, y fueron la base real usada para resolver esto.
 
-**Pregunta de diseño sin resolver:** cuando un acudiente actúa en nombre de un hijo pequeño (por ejemplo, publica en un foro o marca una entrega como leída), ¿la participación se atribuye al acudiente, al estudiante, o se registra de alguna forma híbrida (ej. `learning_events` con un campo "actuó en nombre de")? Esto afecta directamente el cálculo de la barra de avance y cualquier métrica de participación individual del estudiante.
+**Cómo se resolvió, sin necesidad de ningún campo híbrido "actuó en nombre de":**
+- El dashboard del acudiente para ciclos 1-2 es estrictamente de solo lectura (progreso agregado, drill-down hasta el detalle de cada proyecto — ver #21) — la única acción interactiva es la gestión de la foto de perfil del estudiante (hito de moderación de foto), que no es participación académica y nunca se registra como tal.
+- El acceso real "en el salón" para esos ciclos se resuelve vía entrega de sesión (Hito 3b-2, `GrantStudentSessionAction`): `Auth::loginUsingId()` hace que el sistema literalmente SEA el estudiante durante esa sesión, no el acudiente actuando en su nombre. Cualquier participación real (foro, chat, entrega) queda atribuida al estudiante real, sin ambigüedad ni campo especial.
 
-**Cuándo retomarlo:** al especificar el Hito 3b (portal de estudiante), como parte del diseño de la vista de acudiente — antes de construir cualquier pantalla real que registre participación en nombre de un hijo.
+**Pregunta original, ya sin objeto:** "¿la participación se atribuye al acudiente, al estudiante, o de forma híbrida?" — nunca hizo falta responderla, porque el acudiente nunca actúa en nombre del estudiante en ningún flujo que registre participación; en el único flujo donde hay participación real de un estudiante de ciclo 1-2 (entrega de sesión), el sistema ya es el estudiante.
 
 ## 14. Sin recuperación de cuenta autoservicio (Hito 3b-0)
 
@@ -149,6 +149,8 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 **Estado:** decisión consciente, documentada como imprecisa a propósito — no es un bug, es la mejor opción disponible sin resucitar `teacher_assignments`.
 
 **Contexto:** `chat_messages` se aísla por `group_id`, sin `project_id` ni ninguna relación de propiedad tipo `ProjectPolicy` (own/all). La tabla `teacher_assignments` (`teacher_id`, `subject_id`, `group_id`) existe migrada desde el Hito 1 pero sigue siendo scaffolding huérfano — sin Model, sin Actions, sin datos reales (ver punto 10) — así que no hay forma precisa hoy de saber "cuáles son los grupos de este docente". `ChatMessagePolicy::view()`/`create()` optaron por la aproximación más simple y explícita: **cualquier usuario de categoría staff puede ver/enviar mensajes en el chat de cualquier grupo**, sin acotar por proyecto ni ciclo propio. Es más abierto de lo ideal, pero acotado a personal del colegio (nunca a estudiantes ni acudientes), y la única acción realmente sensible — `hide()` (ocultar/moderar) — sí queda estrictamente restringida al permiso `chat.moderate` (solo rector y coordinator, nunca teacher).
+
+**Contraste con un caso posterior que sí evitó esta imprecisión:** `PrivateChatThreadPolicy` (hito de chat privado) enfrentó la misma pregunta de fondo ("¿quién tiene autoridad real sobre este proyecto/grupo?") y, en vez de repetir el criterio abierto "cualquier staff, cualquier grupo", usó `ProjectPolicy::update()` (autoridad real, own/all) como base — posible porque el chat privado sí cuelga de `project_id`, a diferencia de `chat_messages`. No es que la lección de este punto se haya aplicado retroactivamente al chat grupal (sigue exactamente con el mismo criterio abierto de siempre) — es que un módulo nuevo, con la información necesaria disponible desde el diseño, no repitió la misma imprecisión.
 
 **Cuándo retomarlo:** cuando `teacher_assignments` se implemente de verdad (Model + Actions + UI de asignación), reescribir `ChatMessagePolicy::view()`/`create()` para exigir que el docente tenga una asignación real sobre el grupo del mensaje, en vez de la puerta abierta a cualquier staff.
 
@@ -195,6 +197,8 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Contexto:** el Hito 3b-2 (entrega de sesión docente→estudiante) redirige, tras `Auth::loginUsingId()`, a `/mis-proyectos` — las mismas pantallas de `MyProjects`/`ProjectShow`/`ForumThreadShow`/`GroupChat` que ya existían, con texto denso, sin avatar, sin iconografía grande, pensadas para un adolescente que lee bien, no para un niño de transición o primero. El propio skill `livewire-components` ya documenta la tabla "UX: reglas para primaria vs secundaria" (avatar visible y grande, máx. 3 opciones por pantalla, rúbrica solo color/ícono, sin porcentajes) — nada de eso está implementado todavía en ninguna pantalla del portal, ni de estudiante de ciclos 3-4 ni, ahora, de ciclos 1-2.
 
+**Avance parcial (hito de estrellas):** el reemplazo de la barra de avance por `<x-progress-stars>` para ciclos 1-2 (`ProjectShow`, `PortalHome`, drill-down completo del acudiente) es la primera pieza concreta construida de lo que describe esta entrada — resuelve específicamente el punto "sin porcentajes" de la tabla de UX de arriba. El resto (avatar visible y grande, íconos grandes, máx. 3 opciones por pantalla, rúbrica solo color/ícono, lenguaje simplificado en general) sigue sin construir — esta entrada sigue abierta, no se marca resuelta.
+
 **Cuándo retomarlo:** hito de diseño aparte, no incremental sobre 3b-1/3b-2 — requiere decidir el lenguaje visual completo (iconos, tipografía, narración de avatar) antes de tocar las pantallas existentes, en vez de ir parcheando cada componente por separado.
 
 ## 20. Destino futuro de la columna `avg_rubric_value` en `student_metrics` (Hito 4)
@@ -209,11 +213,18 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 ## 21. Dashboard del acudiente: solo lista de pendientes, sin avance ni nivel cualitativo (Hito 5a)
 
-**Estado:** decisión explícita del paso 0 del Hito 5a, no un recorte accidental ni el dashboard definitivo del acudiente.
+**Estado:** ✅ resuelto — funcionalmente completo, visualmente no diferenciado (ver matiz abajo).
 
-**Contexto:** `PortalHome` (ruta `/`, compartida con el placeholder de estudiante) ahora muestra, para el rol `parent`, la lista de hijos vinculados (`User::children()`) y por cada uno sus evidencias pendientes con fecha límite próxima (`StudentPhaseSchedule` + `ExpectedEvidence`, excluyendo las que ya tienen `Submission` en estado `submitted`/`evaluated`). A propósito **no** incluye barra de avance ni nivel cualitativo — nada de `Tracking` (`StudentMetric`, `PerformanceSnapshot`). Fue el requisito explícito de la especificación del hito, no una limitación técnica: solo se necesitaba "adónde llevar" al acudiente desde el correo de recordatorio de entrega (#3, Hito 5b), no replicar el portal de estudiante.
+**Contexto (histórico):** `PortalHome` (ruta `/`, compartida con el placeholder de estudiante) originalmente mostraba, para el rol `parent`, solo la lista de hijos vinculados (`User::children()`) y por cada uno sus evidencias pendientes con fecha límite próxima — a propósito **sin** barra de avance ni nivel cualitativo. Fue el requisito explícito de la especificación del paso 0 del Hito 5a, no una limitación técnica: solo se necesitaba "adónde llevar" al acudiente desde el correo de recordatorio de entrega (#3, Hito 5b), no replicar el portal de estudiante todavía.
 
-**Cuándo retomarlo:** el dashboard completo del acudiente (avance del hijo, nivel cualitativo, quizás por proyecto) es un hito de diseño aparte y futuro — requiere decidir primero su propio lenguaje visual "simple y limpio" (`layouts/parent.blade.php`, mencionado como aspiracional en el skill `livewire-components` pero nunca construido; hoy acudiente y estudiante comparten literalmente `layouts/portal.blade.php`), no una extensión incremental de esta lista de pendientes.
+**Lo que completó el dashboard, en hitos posteriores:**
+- Progreso agregado por campo de pensamiento, por hijo (Hito 4b, `AggregateThinkingFieldProgressAction`).
+- Selector de hijo con foto/ícono (hito de moderación de foto de estudiante).
+- Drill-down completo — campos de pensamiento → proyectos → detalle de proyecto/evidencia — en modo estrictamente de solo lectura (hito de drill-down del acudiente).
+
+**Matiz que sigue vigente:** `layouts/parent.blade.php` — un lenguaje visual propio y distinto para el acudiente, mencionado como aspiracional en el skill `livewire-components` — nunca se construyó. Todos los componentes del acudiente (`PortalHome`, `ChildThinkingFields`, `ChildFieldProjects`, `ChildProjectShow`, `ChildEvidenceShow`) siguen usando `layouts/portal.blade.php`, compartido con el estudiante. El dashboard es funcionalmente completo; no tiene una identidad visual propia.
+
+**Si se retoma:** el lenguaje visual propio del acudiente queda como un hito de diseño aparte, no incremental — mismo criterio que #19 (requiere decidir el lenguaje visual completo antes de tocar componentes existentes).
 
 ## 22. Cron `schedule:run` en producción — no configurado todavía (Hito 5b)
 
@@ -275,6 +286,8 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** correr `npm run build` como parte del checklist de cierre de cualquier hito que agregue o modifique un `.blade.php` con clases de Tailwind nuevas — no solo antes del deploy. Si esto sigue mordiendo en hitos futuros, vale la pena evaluar activar el dev server de Vite (`npm run dev`) para este entorno en vez de depender de recordar recompilar manualmente.
 
+**Relacionado, causa raíz distinta:** el hallazgo posterior del tema Vite propio de `/academia` (`resources/css/filament/academic/theme.css`, ver `CLAUDE.md` sección "Producción real", punto 3) es el mismo síntoma general — CSS compilado sin las clases del proyecto, bug visual silencioso — pero causa raíz distinta: ahí faltaba registrar el tema propio del panel académico (`AcademicPanelProvider::viteTheme()`), no un `npm run build` pendiente de correr.
+
 ---
 
 ## 26. Video en galería/foro: solo YouTube no listado incrustado, nunca subida directa (Hito de galería)
@@ -289,7 +302,7 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Estado:** pendiente — no es un bloqueante técnico, es un pendiente de contenido legal.
 
-**Contexto:** con GalleryPost/GalleryPhoto y las fotos adjuntas en ForumPost, la plataforma ahora almacena y muestra fotografías reales de estudiantes (menores de edad) dentro de `/` y `/academia`. El texto legal definitivo de tratamiento de datos (mismo pendiente ya anotado para la integración de Google Workspace, ver TODO.md #12) debe mencionar explícitamente el uso de imagen/fotografía de los estudiantes en la plataforma, no solo el tratamiento de datos académicos — son categorías de dato distintas y el consentimiento de uno no cubre automáticamente al otro.
+**Contexto:** con GalleryPost/GalleryPhoto, las fotos adjuntas en ForumPost, y la foto de perfil del estudiante (`users.photo_path`, subida por el acudiente en ciclos 1-2, hito de moderación de foto), la plataforma ahora almacena y muestra fotografías reales de estudiantes (menores de edad) dentro de `/` y `/academia`. El texto legal definitivo de tratamiento de datos (mismo pendiente ya anotado para la integración de Google Workspace, ver TODO.md #12) debe mencionar explícitamente el uso de imagen/fotografía de los estudiantes en la plataforma — las tres fuentes, no solo galería/foro —, no solo el tratamiento de datos académicos — son categorías de dato distintas y el consentimiento de uno no cubre automáticamente al otro.
 
 **Cuándo retomarlo:** junto con el texto legal definitivo de tratamiento de datos (mismo hito que #12), antes de que la galería tenga uso real con fotos de estudiantes en producción — no antes de eso, pero tampoco después.
 
@@ -329,13 +342,15 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 ## 31. Sin fixture centralizado de cuentas de prueba (`@test.local`)
 
-**Estado:** identificado al investigar por qué `rectora.prueba@test.local` tenía una contraseña distinta al resto de las cuentas de prueba (hito de foto de perfil de estudiante) — no resuelto, solo documentado.
+**Estado:** patrón recurrente confirmado — ya no es un riesgo hipotético, no resuelto todavía.
 
-**Contexto:** a lo largo de esta sesión se crearon siete cuentas de prueba (`docente.prueba`, `estudiante.tercero`, `estudiante.prueba`, `acudiente.prueba`, `rectora.prueba`, y dos más puntuales para el hito de foto de perfil) con el dominio `@test.local`, todas ad-hoc vía `php artisan tinker` en momentos distintos — **ninguna vive en un seeder**. Se confirmó grepeando `app/` y `database/`: cero referencias a `test.local` en el código. La contraseña `"password"` fue una convención repetida la mayoría de las veces, nunca garantizada — así fue como `rectora.prueba` terminó con una distinta sin que nada lo detectara, hasta que un login real falló.
+**Contexto:** identificado originalmente al investigar por qué `rectora.prueba@test.local` tenía una contraseña distinta al resto de las cuentas de prueba (hito de foto de perfil de estudiante). En esa sesión se habían creado siete cuentas de prueba (`docente.prueba`, `estudiante.tercero`, `estudiante.prueba`, `acudiente.prueba`, `rectora.prueba`, y dos más puntuales) con el dominio `@test.local`, todas ad-hoc vía `php artisan tinker` en momentos distintos — **ninguna vive en un seeder**. Se confirmó grepeando `app/` y `database/`: cero referencias a `test.local` en el código. La contraseña `"password"` fue una convención repetida la mayoría de las veces, nunca garantizada — así fue como `rectora.prueba` terminó con una distinta sin que nada lo detectara, hasta que un login real falló.
+
+**Confirmado como patrón, no un caso aislado:** desde que se documentó esta entrada, el mismo camino manual por `tinker` se repitió en al menos tres hitos más — dashboard del acudiente (drill-down), chat privado, y estrellas —, cada uno creando cuentas `@test.local` ad-hoc nuevas para poder verificar en Chrome. Ya no es un riesgo hipotético ligado a "si el equipo crece" — es un patrón recurrente confirmado en la práctica, cada vez que hace falta una cuenta de prueba nueva.
 
 **Por qué importa:** no es solo la molestia puntual de una contraseña — sin un fixture centralizado, reconstruir el entorno de pruebas de dev (o dárselo a alguien más del equipo) depende de memoria de sesiones de chat pasadas, no de algo reproducible con un comando. Cada cuenta nueva creada ad-hoc es una oportunidad más de inconsistencia silenciosa como esta.
 
-**Cuándo retomarlo:** si el equipo crece más allá de Diego, o si reconstruir el entorno de dev se vuelve una tarea frecuente. La solución más simple sería un `DevFixturesSeeder` (o similar, fuera de `DatabaseSeeder` para no correr en producción) que cree estas cuentas con `firstOrCreate` y contraseña fija — no urgente hoy porque el entorno de dev actual ya tiene las cuentas que hacen falta.
+**Cuándo retomarlo:** el disparador original ("si el equipo crece más allá de Diego, o si reconstruir el entorno de dev se vuelve una tarea frecuente") ya se cumplió por el patrón recurrente de arriba, no por crecimiento de equipo. La recomendación técnica sigue siendo la misma: un `DevFixturesSeeder` (o similar, fuera de `DatabaseSeeder` para no correr en producción) que cree estas cuentas con `firstOrCreate` y contraseña fija — ahora con más urgencia real detrás, no una mejora especulativa.
 
 ## 32. Chat privado — visibilidad institucional deliberadamente separada de la autoridad de escritura (gobernanza, ya implementada)
 
