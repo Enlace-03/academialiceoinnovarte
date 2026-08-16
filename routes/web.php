@@ -10,6 +10,7 @@ use App\Livewire\Shared\PortalHome;
 use App\Livewire\Student\EvidenceShow;
 use App\Livewire\Student\ForumThreadShow;
 use App\Livewire\Student\GroupChat;
+use App\Livewire\Student\MyCalendar;
 use App\Livewire\Student\MyProjects;
 use App\Livewire\Student\ProjectShow;
 use App\Models\User;
@@ -186,6 +187,7 @@ Route::middleware(['auth', 'expire-delivered-session', 'role:student'])->group(f
         ->name('student.evidence.show')
         ->withoutScopedBindings();
     Route::get('/mi-grupo/chat', GroupChat::class)->name('student.chat');
+    Route::get('/calendario', MyCalendar::class)->name('student.calendar');
 });
 
 /**

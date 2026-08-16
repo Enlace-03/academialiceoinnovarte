@@ -360,6 +360,22 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** nunca, salvo que cambie la base legal — si algún ajuste futuro a los presets de `coordinator`/`rector` termina otorgando escritura por el solo hecho de tener `private_chats.view.all`, es una regresión de esta decisión, no una mejora.
 
+## 33. Acceso a chat desde la tarjeta de proyecto (Hito de dashboard enriquecido)
+
+**Estado:** no implementado, diferido explícitamente por costo bajo de agregar después.
+
+**Contexto:** el rediseño de `MyProjects` (grid de tarjetas de proyecto, "Próxima entrega", calendario) no agrega un acceso directo al chat de equipo (`ProjectShow::myTeam()`/chat privado) desde la propia tarjeta -- hoy sigue requiriendo entrar al proyecto primero. No es una limitación de datos: `ProjectTeam`/`PrivateChatThread` ya existen y `ProjectShow` ya resuelve `myTeam()` para el proyecto individual: agregar el enlace es solo trabajo de UI en la tarjeta, sin cambios de dominio.
+
+**Cuándo retomarlo:** cuando el flujo real de uso muestre que entrar al proyecto solo para llegar al chat es fricción frecuente -- de momento no se sabe si el estudiantado lo pedirá.
+
+## 34. Calendario del estudiante: sin filtro por proyecto ni eventos institucionales (Hito de dashboard enriquecido)
+
+**Estado:** fuera de alcance explícito de la primera versión del calendario (`App\Livewire\Student\MyCalendar`).
+
+**Contexto:** el calendario nuevo solo marca fechas límite de `StudentPhaseSchedule` (evidencias esperadas todavía sin resolver, vía `ResolvePendingEvidencesForStudentAction`) -- no distingue por proyecto (un estudiante con varios proyectos activos ve todas las entregas mezcladas en el mismo mes) y no muestra ningún evento puramente institucional (ej. jornada pedagógica, entrega de boletines, día festivo) porque no existe hoy ninguna entidad de "evento" en el dominio -- solo hay fechas derivadas de fases/evidencias.
+
+**Cuándo retomarlo:** filtro por proyecto es una mejora de UI menor cuando el volumen de proyectos simultáneos por estudiante lo justifique. Eventos institucionales requiere diseñar una entidad nueva primero (¿tabla `institutional_events`? ¿alcance por ciclo/grado o global? ¿quién la administra -- rector, cualquier docente?) -- no es una extensión trivial de lo que ya existe, es una pieza de dominio nueva.
+
 ---
 
 ## Notas de infraestructura (resueltas)

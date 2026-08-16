@@ -6,7 +6,9 @@ use App\Models\User;
 use App\Modules\Institution\Models\Cycle;
 use App\Modules\Institution\Models\SchoolGrade;
 use App\Modules\Institution\Models\ThinkingField;
+use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Project;
+use App\Modules\Project\Models\StudentPhaseSchedule;
 use App\Modules\Tracking\Models\StudentProgress;
 use Database\Seeders\RoleLevelSeeder;
 use Database\Seeders\RolePermissionSeeder;
@@ -157,5 +159,126 @@ class MyProjectsTest extends TestCase
 
         $response->assertOk();
         $response->assertSee('Todavía no hay proyectos disponibles para tu ciclo.');
+    }
+
+    /**
+     * Hito de dashboard enriquecido: bloque "Próxima entrega" reutiliza
+     * ResolvePendingEvidencesForStudentAction con ventana de 7 días.
+     */
+    public function test_shows_pending_evidence_due_within_seven_days(): void
+    {
+        $student = User::factory()->create()->assignRole('student');
+
+        $project = Project::factory()->create();
+        $phase = $project->phases()->first();
+        ExpectedEvidence::factory()->create(['phase_id' => $phase->id, 'description' => 'Ensayo de cierre']);
+        StudentPhaseSchedule::factory()->create([
+            'student_id' => $student->id,
+            'phase_id' => $phase->id,
+            'end_date' => now()->addDays(3)->toDateString(),
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertDontSee('No tienes ningún trabajo que entregar en los próximos 7 días.');
+        $response->assertSee('Ensayo de cierre');
+    }
+
+    public function test_does_not_show_evidence_due_beyond_seven_days(): void
+    {
+        $student = User::factory()->create()->assignRole('student');
+
+        $project = Project::factory()->create();
+        $phase = $project->phases()->first();
+        ExpectedEvidence::factory()->create(['phase_id' => $phase->id, 'description' => 'Entrega lejana']);
+        StudentPhaseSchedule::factory()->create([
+            'student_id' => $student->id,
+            'phase_id' => $phase->id,
+            'end_date' => now()->addDays(10)->toDateString(),
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertDontSee('Entrega lejana');
+        $response->assertSee('No tienes ningún trabajo que entregar en los próximos 7 días.');
+    }
+
+    public function test_does_not_show_pending_evidence_of_another_student(): void
+    {
+        $student = User::factory()->create()->assignRole('student');
+        $otherStudent = User::factory()->create()->assignRole('student');
+
+        $project = Project::factory()->create();
+        $phase = $project->phases()->first();
+        ExpectedEvidence::factory()->create(['phase_id' => $phase->id, 'description' => 'Entrega de otro estudiante']);
+        StudentPhaseSchedule::factory()->create([
+            'student_id' => $otherStudent->id,
+            'phase_id' => $phase->id,
+            'end_date' => now()->addDays(2)->toDateString(),
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertDontSee('Entrega de otro estudiante');
+    }
+
+    public function test_project_card_shows_progress_percentage_for_a_student_in_a_late_cycle(): void
+    {
+        $cycle = Cycle::factory()->create(['order' => 3]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+
+        $project = Project::factory()->create(['cycle_id' => $cycle->id, 'title' => 'Proyecto con avance']);
+        StudentProgress::factory()->create([
+            'student_id' => $student->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 73,
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertSee('Proyecto con avance');
+        $response->assertSee('73%');
+    }
+
+    public function test_project_card_shows_stars_for_a_student_in_an_early_cycle(): void
+    {
+        $earlyCycle = Cycle::factory()->create(['order' => 2]);
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $earlyCycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+
+        $project = Project::factory()->create(['cycle_id' => $earlyCycle->id]);
+        StudentProgress::factory()->create([
+            'student_id' => $student->id,
+            'project_id' => $project->id,
+            'phase_id' => null,
+            'progress_pct' => 55,
+        ]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertSee('aria-label="55% de avance"', false);
+        $response->assertDontSee('bg-emerald-500 h-2 rounded-full', false);
+    }
+
+    public function test_project_card_shows_the_responsible_teacher_name(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $grade = SchoolGrade::factory()->create(['cycle_id' => $cycle->id]);
+        $student = User::factory()->create(['school_grade_id' => $grade->id])->assignRole('student');
+        $teacher = User::factory()->create(['name' => 'Profesora Ejemplo'])->assignRole('teacher');
+
+        Project::factory()->create(['cycle_id' => $cycle->id, 'created_by_user_id' => $teacher->id]);
+
+        $response = $this->actingAs($student)->get(route('student.projects.index'));
+
+        $response->assertOk();
+        $response->assertSee('Profesora Ejemplo');
     }
 }

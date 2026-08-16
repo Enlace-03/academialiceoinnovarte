@@ -155,14 +155,18 @@ class PortalHomeTest extends TestCase
             ->assertRedirect(Filament::getPanel('academic')->getUrl());
     }
 
-    public function test_student_visiting_home_sees_portal_home_normally(): void
+    /**
+     * Hito de dashboard enriquecido: MyProjects pasó a ser el home real del
+     * estudiante -- PortalHome ya no muestra nada para este rol, redirige de
+     * inmediato, mismo patrón defensivo que ya usa isStaff() para staff.
+     */
+    public function test_student_visiting_home_is_redirected_to_my_projects(): void
     {
         $student = User::factory()->create()->assignRole('student');
 
         $this->actingAs($student)
             ->get(route('portal.home'))
-            ->assertOk()
-            ->assertSee('Ver mis proyectos');
+            ->assertRedirect(route('student.projects.index'));
     }
 
     public function test_parent_visiting_home_sees_portal_home_normally(): void

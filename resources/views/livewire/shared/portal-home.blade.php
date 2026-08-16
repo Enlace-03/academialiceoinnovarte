@@ -94,7 +94,7 @@
                             @foreach ($entry['pending'] as $pending)
                                 <li class="py-2 text-sm flex items-center justify-between gap-4">
                                     <span class="text-gray-700">
-                                        {{ $pending['description'] }}
+                                        {{ $pending['evidence']->description }}
                                         <span class="text-gray-400">— {{ $pending['phase_name'] }}</span>
                                     </span>
                                     <span class="text-gray-500 whitespace-nowrap">{{ $pending['due_date']->format('d/m/Y') }}</span>

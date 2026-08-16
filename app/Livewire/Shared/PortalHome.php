@@ -5,10 +5,9 @@ declare(strict_types=1);
 namespace App\Livewire\Shared;
 
 use App\Models\User;
-use App\Modules\Assessment\Models\Submission;
 use App\Modules\Identity\Actions\RemoveStudentPhotoAction;
 use App\Modules\Identity\Actions\UploadStudentPhotoAction;
-use App\Modules\Project\Models\StudentPhaseSchedule;
+use App\Modules\Project\Actions\ResolvePendingEvidencesForStudentAction;
 use App\Modules\Tracking\Actions\AggregateThinkingFieldProgressAction;
 use Filament\Facades\Filament;
 use Illuminate\Support\Collection;
@@ -18,16 +17,20 @@ use Livewire\Component;
 use Livewire\WithFileUploads;
 
 /**
- * Placeholder post-login del panel fuera de Filament (Hito 3b-0) para
- * estudiante; para acudiente, desde el Hito 5a, es su dashboard mínimo real
- * (lista de hijos + evidencias pendientes con fecha límite próxima). Desde
- * el Hito 4b, se agrega el avance agregado por campo de pensamiento de cada
- * hijo (AggregateThinkingFieldProgressAction, mismo cálculo y mismo
- * componente <x-thinking-field-progress> que el portal de estudiante) --
- * primera pieza de progreso real del dashboard del acudiente, anticipada
- * desde el Hito 5a. Sigue sin nivel cualitativo agregado (diferido al hito
- * de Boletines, ver TODO.md) ni barra por proyecto individual -- el
- * dashboard completo del acudiente sigue siendo un hito de diseño aparte.
+ * Placeholder post-login del panel fuera de Filament (Hito 3b-0), hoy
+ * relevante solo para acudiente -- desde el hito de dashboard enriquecido,
+ * un student que aterriza acá se redirige de inmediato a MyProjects
+ * (mismo patrón defensivo que ya usa isStaff() abajo), porque MyProjects
+ * pasó a ser su verdadero home. Para acudiente, desde el Hito 5a, sigue
+ * siendo su dashboard mínimo real (lista de hijos + evidencias pendientes
+ * con fecha límite próxima). Desde el Hito 4b, se agrega el avance agregado
+ * por campo de pensamiento de cada hijo (AggregateThinkingFieldProgressAction,
+ * mismo cálculo y mismo componente <x-thinking-field-progress> que el
+ * portal de estudiante) -- primera pieza de progreso real del dashboard del
+ * acudiente, anticipada desde el Hito 5a. Sigue sin nivel cualitativo
+ * agregado (diferido al hito de Boletines, ver TODO.md) ni barra por
+ * proyecto individual -- el dashboard completo del acudiente sigue siendo
+ * un hito de diseño aparte.
  *
  * mount(): personal (staff) que aterriza acá -- por login compartido en /login
  * en vez de /academia/login, un bookmark viejo, o sesión ya abierta -- se
@@ -42,7 +45,9 @@ use Livewire\WithFileUploads;
  * mismo método). Si algún día divergieran, el peor caso sigue sin ser un
  * bucle -- el middleware de autenticación de Filament responde con un 403
  * cuando canAccessPanel() es false, nunca con un redirect de vuelta a '/'
- * (confirmado contra el comportamiento real de Filament, no supuesto).
+ * (confirmado contra el comportamiento real de Filament, no supuesto). El
+ * redirect a student.projects.index no tiene ese mismo riesgo por una razón
+ * más simple: MyProjects no redirige a nada, es una pantalla real.
  */
 #[Layout('layouts.portal')]
 class PortalHome extends Component
@@ -62,6 +67,12 @@ class PortalHome extends Component
     {
         if (auth()->user()->isStaff()) {
             $this->redirect(Filament::getPanel('academic')->getUrl());
+
+            return;
+        }
+
+        if (auth()->user()->hasRole('student')) {
+            $this->redirect(route('student.projects.index'));
         }
     }
 
@@ -75,7 +86,7 @@ class PortalHome extends Component
             ->map(fn (User $child) => [
                 'child' => $child,
                 'canManagePhoto' => ($child->schoolGrade?->cycle?->order ?? null) !== null && $child->schoolGrade->cycle->order <= 2,
-                'pending' => $this->pendingEvidencesFor($child),
+                'pending' => app(ResolvePendingEvidencesForStudentAction::class)->execute($child),
                 'thinkingFieldProgress' => app(AggregateThinkingFieldProgressAction::class)->execute($child),
             ]);
     }
@@ -116,32 +127,6 @@ class PortalHome extends Component
         abort_unless(auth()->user()->isGuardianOf($child), 404);
 
         app(RemoveStudentPhotoAction::class)->execute(auth()->user(), $child);
-    }
-
-    private function pendingEvidencesFor(User $child): Collection
-    {
-        $schedules = StudentPhaseSchedule::query()
-            ->where('student_id', $child->id)
-            ->where('end_date', '>=', now()->toDateString())
-            ->with('phase.expectedEvidences')
-            ->orderBy('end_date')
-            ->get();
-
-        $resolvedEvidenceIds = Submission::query()
-            ->where('student_id', $child->id)
-            ->whereIn('status', ['submitted', 'evaluated'])
-            ->pluck('expected_evidence_id');
-
-        return $schedules
-            ->flatMap(fn (StudentPhaseSchedule $schedule) => $schedule->phase->expectedEvidences
-                ->reject(fn ($evidence) => $resolvedEvidenceIds->contains($evidence->id))
-                ->map(fn ($evidence) => [
-                    'phase_name' => $schedule->phase->name,
-                    'description' => $evidence->description,
-                    'due_date' => $schedule->end_date,
-                ]))
-            ->sortBy('due_date')
-            ->values();
     }
 
     public function render()
