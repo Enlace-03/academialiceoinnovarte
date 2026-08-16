@@ -7,3 +7,22 @@
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
 }
+
+@layer base {
+    /*
+        Preflight de Tailwind fija cursor:default en <button> (a propósito,
+        para calcar el comportamiento nativo del navegador) -- diverge de
+        <a>, que sí trae pointer nativo. En un portal donde ambos conviven
+        como "cosas clicables" (enlaces de tarjeta junto a botones de
+        acción), esa diferencia se siente como que el botón no responde al
+        mouse aunque el clic funcione (reportado por Diego en Anterior/
+        Siguiente del calendario -- el mismo síntoma ya afectaba en
+        silencio a cada <button> del portal: login, cerrar sesión, foro,
+        entrega de evidencia). :not(:disabled) para no prometer una acción
+        que wire:loading.attr="disabled" ya bloqueó.
+    */
+    button:not(:disabled),
+    [role='button']:not(:disabled) {
+        cursor: pointer;
+    }
+}
