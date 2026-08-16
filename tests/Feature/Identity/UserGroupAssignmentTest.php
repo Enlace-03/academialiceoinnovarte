@@ -40,8 +40,13 @@ class UserGroupAssignmentTest extends TestCase
 
         Filament::setCurrentPanel(Filament::getPanel('admin'));
 
+        // order=1 explícito: test_group_select_filters_by_the_cycle_derived_from_the_chosen_grade
+        // crea un segundo ciclo bajo la MISMA institución (order aleatorio
+        // ya no es único entre sí -- CycleFactory dejó de usar
+        // fake()->unique(), ver su docblock -- así que ambos deben fijarse
+        // a mano para no chocar contra unique(['institution_id', 'order'])).
         $institution = Institution::factory()->create();
-        $this->cycle = Cycle::factory()->for($institution)->create();
+        $this->cycle = Cycle::factory()->for($institution)->create(['order' => 1]);
         $this->schoolGrade = SchoolGrade::factory()->for($institution)->for($this->cycle)->create();
     }
 
@@ -83,7 +88,7 @@ class UserGroupAssignmentTest extends TestCase
     public function test_group_select_filters_by_the_cycle_derived_from_the_chosen_grade(): void
     {
         $otherCycleInstitution = $this->schoolGrade->institution;
-        $otherCycle = Cycle::factory()->for($otherCycleInstitution)->create();
+        $otherCycle = Cycle::factory()->for($otherCycleInstitution)->create(['order' => 2]);
 
         $sameCycleGroup = Group::factory()->for($this->cycle)->create([
             'name' => 'A',
