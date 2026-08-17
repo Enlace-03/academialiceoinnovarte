@@ -36,9 +36,28 @@ class UserPolicy
         return $user->can('users.create') || $user->can('students.create');
     }
 
+    /**
+     * users.update: vía completa, sujeta al techo de delegación normal
+     * (HasDelegationCeiling::canManageUser()). students.create: vía
+     * adicional, más angosta (Hito de permisos, corrección #3) -- deja
+     * editar ÚNICAMENTE usuarios con rol student o parent, sin importar el
+     * resto de su propio conjunto de permisos. Existe para que quien solo
+     * tiene el permiso atómico de estudiante/acudiente pueda llegar a
+     * GuardiansRelationManager (vive en la página de edición, no en la de
+     * creación) y vincular un acudiente -- sin poder editar ningún otro
+     * tipo de usuario. No reutiliza canManageUser() a propósito: ese método
+     * compara conjuntos de permisos (ya deja pasar a student/parent porque
+     * no cargan ningún permiso del catálogo, así que sería redundante) --
+     * acá se necesita el chequeo directo del ROL del objetivo, no una
+     * comparación de permisos.
+     */
     public function update(User $user, User $target): bool
     {
-        return $user->can('users.update') && $user->canManageUser($target);
+        if ($user->can('users.update') && $user->canManageUser($target)) {
+            return true;
+        }
+
+        return $user->can('students.create') && $target->hasAnyRole(['student', 'parent']);
     }
 
     public function delete(User $user, User $target): bool
