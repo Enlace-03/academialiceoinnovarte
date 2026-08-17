@@ -133,4 +133,70 @@ class MyCalendarTest extends TestCase
             ->assertSee('Maqueta final')
             ->assertSee($expectedUrl, false);
     }
+
+    /**
+     * Por defecto (sin día seleccionado) la columna lateral muestra TODAS
+     * las entregas pendientes del mes visible, no solo las de un día --
+     * pedido explícito de este hito (antes solo aparecían al hacer clic).
+     */
+    public function test_shows_all_month_entries_by_default_without_selecting_a_day(): void
+    {
+        $student = User::factory()->create()->assignRole('student');
+
+        $project = Project::factory()->create();
+        $phase = $project->phases()->first();
+        ExpectedEvidence::factory()->create(['phase_id' => $phase->id, 'description' => 'Bitacora de campo']);
+        StudentPhaseSchedule::factory()->create([
+            'student_id' => $student->id,
+            'phase_id' => $phase->id,
+            'end_date' => '2026-03-20',
+        ]);
+
+        Livewire::actingAs($student)->test(MyCalendar::class)
+            ->assertSee('Entregas de marzo')
+            ->assertSee('Bitacora de campo');
+    }
+
+    /**
+     * Si el mes visible no tiene ninguna entrega pendiente, la columna
+     * lateral se oculta por completo -- sin mensaje "sin entregas", pedido
+     * explícito de este hito.
+     */
+    public function test_hides_the_activities_panel_when_the_month_has_no_pending_entries(): void
+    {
+        $student = User::factory()->create()->assignRole('student');
+
+        Livewire::actingAs($student)->test(MyCalendar::class)
+            ->assertDontSee('Entregas de marzo');
+    }
+
+    /**
+     * Con un día seleccionado, la columna lateral se filtra a ese día y
+     * ofrece un link para volver a la vista de todo el mes (reutiliza
+     * selectDate(), que ya deselecciona si se llama dos veces con la misma
+     * fecha -- mismo mecanismo, no un método nuevo).
+     */
+    public function test_selecting_a_day_offers_a_link_back_to_the_full_month(): void
+    {
+        $student = User::factory()->create()->assignRole('student');
+
+        $project = Project::factory()->create();
+        $phase = $project->phases()->first();
+        ExpectedEvidence::factory()->create(['phase_id' => $phase->id, 'description' => 'Maqueta final']);
+        $dueDate = '2026-03-22';
+        StudentPhaseSchedule::factory()->create([
+            'student_id' => $student->id,
+            'phase_id' => $phase->id,
+            'end_date' => $dueDate,
+        ]);
+
+        $component = Livewire::actingAs($student)->test(MyCalendar::class)
+            ->call('selectDate', $dueDate)
+            ->assertSee('Ver todo el mes')
+            ->assertDontSee('Entregas de marzo');
+
+        $component->call('selectDate', $dueDate)
+            ->assertSee('Entregas de marzo')
+            ->assertDontSee('Ver todo el mes');
+    }
 }
