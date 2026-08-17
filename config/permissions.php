@@ -147,6 +147,12 @@ return [
             'rubrics.manage',
             'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all',
+            // Mismo alcance que rector ya tiene sobre esta pantalla (Hito de
+            // permisos, corrección #1) -- coordinator gestiona seguimiento
+            // institucional tanto como rector, no hay razón de negocio para
+            // que solo rector pueda ajustar los pesos de avance. Sin cambio
+            // de comportamiento para rector.
+            'tracking.settings.manage',
             'chat.moderate',
             'gallery.publish', 'gallery.update.all',
             // Lectura institucional + moderación (protección infantil, Ley 1620) --

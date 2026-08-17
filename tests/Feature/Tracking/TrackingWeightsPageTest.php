@@ -48,12 +48,37 @@ class TrackingWeightsPageTest extends TestCase
         $this->assertFalse(TrackingWeightsPage::canAccess());
     }
 
-    public function test_coordinator_cannot_access_the_page_only_rector_for_now(): void
+    /**
+     * tracking.settings.manage se extendió a coordinator (Hito de permisos,
+     * corrección #1) -- mismo alcance que rector ya tenía, sin cambio de
+     * comportamiento para rector (ver test_rector_can_access_the_page).
+     */
+    public function test_coordinator_can_access_the_page(): void
     {
         $coordinator = User::factory()->create()->assignRole('coordinator');
         $this->actingAs($coordinator);
 
-        $this->assertFalse(TrackingWeightsPage::canAccess());
+        $this->assertTrue(TrackingWeightsPage::canAccess());
+    }
+
+    public function test_coordinator_can_save_weight_changes(): void
+    {
+        $cycle = Cycle::factory()->create();
+        $coordinator = User::factory()->create()->assignRole('coordinator');
+        $this->actingAs($coordinator);
+
+        Livewire::test(TrackingWeightsPage::class)
+            ->fillForm(['weights' => [
+                'global' => ['evidencias' => 40, 'foro' => 40, 'chat' => 20],
+                (string) $cycle->id => ['evidencias' => 60, 'foro' => 30, 'chat' => 10],
+            ]])
+            ->call('save')
+            ->assertHasNoErrors();
+
+        $this->assertSame(
+            ['evidencias' => 40, 'foro' => 40, 'chat' => 20],
+            json_decode(InstitutionSetting::get(TrackingWeightsResolver::GLOBAL_KEY), true),
+        );
     }
 
     public function test_saving_valid_weights_persists_global_and_each_cycle(): void
