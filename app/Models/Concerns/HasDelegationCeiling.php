@@ -47,6 +47,21 @@ trait HasDelegationCeiling
             return Role::query()->get();
         }
 
+        /**
+         * Vía angosta de UserPolicy::create() (Hito de permisos, corrección
+         * #2): quien NO tiene users.create pero sí students.create solo
+         * llegó al formulario por el permiso atómico de estudiante/
+         * acudiente -- nunca debe ver ni poder asignar teacher/coordinator/
+         * rector/secretary/super_admin, ni siquiera si por alguna otra
+         * combinación de permisos individuales técnicamente calificarían
+         * como subconjunto más abajo. student/parent no llevan permisos del
+         * catálogo (ver 'fixed_roles'), así que esta lista es completa y no
+         * depende del resto del cálculo de techo de delegación.
+         */
+        if (! $this->hasPermissionTo('users.create') && $this->hasPermissionTo('students.create')) {
+            return Role::query()->whereIn('name', ['student', 'parent'])->get();
+        }
+
         $ownPermissions = $this->getAllPermissions()->pluck('name');
 
         return Role::with('permissions')->get()

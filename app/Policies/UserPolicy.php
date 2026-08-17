@@ -21,9 +21,19 @@ class UserPolicy
         return $user->can('users.view');
     }
 
+    /**
+     * users.create: vía completa, crea cualquier rol (sujeto igual al techo
+     * de delegación de HasDelegationCeiling::assignableRoles() para CUÁLES
+     * roles). students.create: vía adicional, más angosta -- autoriza
+     * llegar a esta misma pantalla (la única de creación de usuarios en el
+     * proyecto), pero HasDelegationCeiling::assignableRoles() es quien de
+     * verdad restringe el desplegable de rol a student/parent para quien
+     * entra solo por esta vía (ver UserForm). No reemplaza el chequeo de
+     * users.create, se suma a él.
+     */
     public function create(User $user): bool
     {
-        return $user->can('users.create');
+        return $user->can('users.create') || $user->can('students.create');
     }
 
     public function update(User $user, User $target): bool

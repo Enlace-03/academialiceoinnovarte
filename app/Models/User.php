@@ -126,7 +126,9 @@ class User extends Authenticatable implements FilamentUser
      * Panel-level access gate. 'admin' is restricted to super_admin and to
      * anyone holding a permission whose name starts with one of the prefixes
      * in config('permissions.admin_panel_permission_prefixes') (users.* /
-     * institution.* today). Checked by prefix, not by role name, so a future
+     * institution.* / students.create today -- the last one added so the
+     * narrow students.create path into UserPolicy::create() is actually
+     * reachable, see that Policy). Checked by prefix, not by role name, so a future
      * role with those permissions needs no change here. If the config is
      * empty or missing, only super_admin passes (fail-closed). 'academic'
      * requires at least one role categorized as "staff" in

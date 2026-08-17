@@ -206,5 +206,15 @@ return [
         ],
         
     ],
-    'admin_panel_permission_prefixes' => ['users.', 'institution.'],
+    // 'students.create' (no todo el prefijo 'students.') a propósito (Hito de
+    // permisos, corrección #2): students.view/students.update/
+    // students.photo.moderate NO deben abrir la puerta del panel /admin por
+    // sí solos -- students.create sí, porque ahora es una vía real (más
+    // angosta que users.create) hacia la única pantalla de creación de
+    // usuarios del proyecto (ver UserPolicy::create()). Como es
+    // coincidencia de prefijo (Str::startsWith), esta misma entrada también
+    // cubre students.create.scoped -- inofensivo hoy porque ese permiso
+    // sigue siendo el subsistema de alcance nunca conectado (ver
+    // StudentPolicy y TODO.md).
+    'admin_panel_permission_prefixes' => ['users.', 'institution.', 'students.create'],
 ];

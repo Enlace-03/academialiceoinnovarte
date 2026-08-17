@@ -28,7 +28,9 @@ Backlog centralizado de deuda técnica y trabajo diferido conscientemente. Cada 
 
 **Contexto:** ambas en `app/Modules/Identity/Actions/`. Ninguna está referenciada desde ningún Filament Resource, Livewire component ni ruta — el único rastro de uso es un ejemplo en docblock (`CreateStaffUserAction.php`, comentado, no invocación real). Las dos importan `App\Modules\Identity\Models\User`, namespace que no existe (el modelo real es `App\Models\User`). Además, `AssignPermissionsAction` depende de `App\Modules\Identity\Models\UserGrant`, que tampoco existe (ver punto 5). Es la misma causa raíz que tenía `StudentPolicy::create()`, ya simplificada.
 
-**Cuándo retomarlo:** evaluar si se completan (corrigiendo el namespace y creando `UserGrant`) o se eliminan, cuando se diseñe el flujo real de creación de personal con permisos delegados por alcance.
+**Bug adicional encontrado (Hito de permisos, no corregido a propósito — es código muerto sin punto de entrada, corregirlo ahora no cambia ningún comportamiento real):** `AssignPermissionsAction::execute()` compara `$granter->hasRole('admin')` como atajo de "puede otorgar cualquier permiso del catálogo". Ese rol se llama `super_admin` en todo el resto del sistema (`HasDelegationCeiling::SUPER_ADMIN_ROLE`, `config('permissions.role_categories')`, `RolePermissionSeeder`) — un rol literal `admin` no existe, así que ese atajo nunca es cierto. Si algún día se retoma este subsistema, corregir esa línea a `hasRole('super_admin')` antes de conectarlo a nada; si no se corrige, un super_admin real quedaría limitado a delegar solo los permisos que su rol tiene explícitamente en `role_has_permissions` (hoy da la casualidad de que el seeder sincroniza el catálogo completo ahí, así que no se notaría hasta que un permiso nuevo se agregue al catálogo sin volver a correr el seeder).
+
+**Cuándo retomarlo:** evaluar si se completan (corrigiendo el namespace, el bug de `hasRole('admin')` de arriba, y creando `UserGrant`) o se eliminan, cuando se diseñe el flujo real de creación de personal con permisos delegados por alcance.
 
 ## 5. Migración `user_grants` huérfana (sin modelo Eloquent ni consumidor activo)
 
