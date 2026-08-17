@@ -34,8 +34,13 @@ use Livewire\Component;
  * límite. El progreso por tarjeta lee StudentProgress ya precalculado por
  * Tracking (fila phase_id=null, "del proyecto completo"), mismo dato que ya
  * usa ProjectShow::progressSummary() -- sin cálculo nuevo acá.
+ *
+ * maxWidth (hito de layout ancho): max-w-5xl -- el grid de tarjetas pasa a
+ * sm:grid-cols-2 lg:grid-cols-3, necesita más aire que el max-w-3xl por
+ * defecto pero no tanto como ProjectShow/EvidenceShow (sin columna lateral
+ * de contenido denso, solo tarjetas cortas).
  */
-#[Layout('layouts.portal')]
+#[Layout('layouts.portal', ['maxWidth' => 'max-w-5xl'])]
 class MyProjects extends Component
 {
     public function projects(): Collection

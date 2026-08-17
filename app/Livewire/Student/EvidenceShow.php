@@ -38,8 +38,13 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
  * lo tanto input de cliente no confiable por sí solo -- por eso el Action,
  * no este componente, es quien re-valida cada existing_id contra
  * $submission->attachments() antes de tocar nada.
+ *
+ * maxWidth (hito de layout ancho): mismo max-w-6xl que ProjectShow -- el
+ * grid grid-cols-1 lg:grid-cols-2 interno (instrucciones+rúbrica | estado+
+ * entrega) ya existía, pero quedaba apretado en dos columnas de ~350px
+ * dentro del max-w-3xl por defecto; sin cambios al grid en sí.
  */
-#[Layout('layouts.portal')]
+#[Layout('layouts.portal', ['maxWidth' => 'max-w-6xl'])]
 class EvidenceShow extends Component
 {
     use WithFileUploads;

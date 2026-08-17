@@ -18,172 +18,185 @@
     <h1 class="text-xl font-semibold mt-2">{{ $project->title }}</h1>
     <p class="text-sm text-gray-600 mt-1">{{ $project->guiding_question }}</p>
 
-    {{-- Dos indicadores separados a propósito (Hito 4): la barra mide avance
-         mecánico (cobertura de evidencias/foro/chat), nunca calidad. El
-         indicador cualitativo (si ya hay evaluaciones) va aparte, como
-         texto + color -- nunca como número, nunca fusionado en la barra.
+    {{-- Grid de dos columnas en pantallas grandes (hito de layout ancho):
+         fases/evidencias (contenido principal) a la izquierda, foro+chats
+         (conversación alrededor del proyecto) a la derecha -- mismo orden
+         de siempre en el DOM (columna lateral después del contenido
+         principal), así que en mobile (grid-cols-1) se sigue apilando
+         exactamente igual que antes de este cambio: avance, fases, foro,
+         chat individual, chat de equipo. --}}
+    <div class="mt-6 grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        <div class="lg:col-span-2 space-y-8">
+            {{-- Dos indicadores separados a propósito (Hito 4): la barra mide avance
+                 mecánico (cobertura de evidencias/foro/chat), nunca calidad. El
+                 indicador cualitativo (si ya hay evaluaciones) va aparte, como
+                 texto + color -- nunca como número, nunca fusionado en la barra.
 
-         Estrellas vs. barra (Hito de estrellas): ciclos 1-2 ven
-         <x-progress-stars>, nunca la barra ni el "{{ pct }}%" al mismo
-         tiempo -- ver User::isInEarlyCycle(). --}}
-    <div class="mt-6 bg-white rounded-lg shadow p-4">
-        @if (auth()->user()->isInEarlyCycle())
-            <div class="flex items-center justify-between text-sm mb-1">
-                <span class="font-medium text-gray-700">Avance</span>
-            </div>
-            <x-progress-stars :percent="$progressSummary['pct']" />
-        @else
-            <div class="flex items-center justify-between text-sm mb-1">
-                <span class="font-medium text-gray-700">Avance</span>
-                <span class="text-gray-500">{{ $progressSummary['pct'] }}%</span>
-            </div>
-            <div class="w-full bg-gray-200 rounded-full h-2.5">
-                <div class="bg-emerald-500 h-2.5 rounded-full transition-all" style="width: {{ $progressSummary['pct'] }}%"></div>
-            </div>
-        @endif
-
-        @if ($progressSummary['level'])
-            <div class="mt-3">
-                <span @class([
-                    'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                    $levelColorClasses[$progressSummary['level']->key] ?? 'bg-gray-100 text-gray-500',
-                ])>
-                    {{ $progressSummary['level']->label }}
-                </span>
-            </div>
-        @endif
-    </div>
-
-    <div class="mt-8 space-y-8">
-        @foreach ($phases as $phase)
-            <section id="fase-{{ $phase->id }}" class="bg-white rounded-lg shadow p-5">
-                <h2 class="font-semibold text-emerald-800">{{ $phase->name }}</h2>
-
-                @if ($phase->description)
-                    <p class="text-sm text-gray-600 mt-1">{{ $phase->description }}</p>
+                 Estrellas vs. barra (Hito de estrellas): ciclos 1-2 ven
+                 <x-progress-stars>, nunca la barra ni el "{{ pct }}%" al mismo
+                 tiempo -- ver User::isInEarlyCycle(). --}}
+            <div class="bg-white rounded-lg shadow p-4">
+                @if (auth()->user()->isInEarlyCycle())
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-700">Avance</span>
+                    </div>
+                    <x-progress-stars :percent="$progressSummary['pct']" />
+                @else
+                    <div class="flex items-center justify-between text-sm mb-1">
+                        <span class="font-medium text-gray-700">Avance</span>
+                        <span class="text-gray-500">{{ $progressSummary['pct'] }}%</span>
+                    </div>
+                    <div class="w-full bg-gray-200 rounded-full h-2.5">
+                        <div class="bg-emerald-500 h-2.5 rounded-full transition-all" style="width: {{ $progressSummary['pct'] }}%"></div>
+                    </div>
                 @endif
 
-                {{-- Guías --}}
-                @if ($phase->guides->isNotEmpty())
-                    <div class="mt-4 space-y-3">
-                        <h3 class="text-xs font-semibold uppercase text-gray-400">Guías</h3>
-                        @foreach ($phase->guides as $guide)
-                            <div class="border border-gray-100 rounded p-3">
-                                <p class="font-medium text-sm">{{ $guide->title }}</p>
-                                @if ($guide->content)
-                                    <p class="text-sm text-gray-600 mt-1">{{ $guide->content }}</p>
-                                @endif
+                @if ($progressSummary['level'])
+                    <div class="mt-3">
+                        <span @class([
+                            'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                            $levelColorClasses[$progressSummary['level']->key] ?? 'bg-gray-100 text-gray-500',
+                        ])>
+                            {{ $progressSummary['level']->label }}
+                        </span>
+                    </div>
+                @endif
+            </div>
 
-                                @if ($guide->resources->isNotEmpty())
-                                    <ul class="mt-2 space-y-1">
-                                        @foreach ($guide->resources as $resource)
-                                            <li class="text-sm">
-                                                <a href="{{ $resource->url_or_path }}" target="_blank" class="text-emerald-700 hover:underline">
-                                                    {{ $resource->title }}
-                                                </a>
-                                                <span class="text-xs text-gray-400">({{ \App\Modules\Project\Models\Resource::TYPES[$resource->type] ?? $resource->type }})</span>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                @endif
+            <div class="space-y-8">
+                @foreach ($phases as $phase)
+                    <section id="fase-{{ $phase->id }}" class="bg-white rounded-lg shadow p-5">
+                        <h2 class="font-semibold text-emerald-800">{{ $phase->name }}</h2>
+
+                        @if ($phase->description)
+                            <p class="text-sm text-gray-600 mt-1">{{ $phase->description }}</p>
+                        @endif
+
+                        {{-- Guías --}}
+                        @if ($phase->guides->isNotEmpty())
+                            <div class="mt-4 space-y-3">
+                                <h3 class="text-xs font-semibold uppercase text-gray-400">Guías</h3>
+                                @foreach ($phase->guides as $guide)
+                                    <div class="border border-gray-100 rounded p-3">
+                                        <p class="font-medium text-sm">{{ $guide->title }}</p>
+                                        @if ($guide->content)
+                                            <p class="text-sm text-gray-600 mt-1">{{ $guide->content }}</p>
+                                        @endif
+
+                                        @if ($guide->resources->isNotEmpty())
+                                            <ul class="mt-2 space-y-1">
+                                                @foreach ($guide->resources as $resource)
+                                                    <li class="text-sm">
+                                                        <a href="{{ $resource->url_or_path }}" target="_blank" class="text-emerald-700 hover:underline">
+                                                            {{ $resource->title }}
+                                                        </a>
+                                                        <span class="text-xs text-gray-400">({{ \App\Modules\Project\Models\Resource::TYPES[$resource->type] ?? $resource->type }})</span>
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @endif
+                                    </div>
+                                @endforeach
                             </div>
-                        @endforeach
-                    </div>
-                @endif
+                        @endif
 
-                {{-- Recursos generales de la fase --}}
-                @if ($phase->resources->isNotEmpty())
-                    <div class="mt-4">
-                        <h3 class="text-xs font-semibold uppercase text-gray-400">Recursos</h3>
-                        <ul class="mt-2 space-y-1">
-                            @foreach ($phase->resources as $resource)
-                                <li class="text-sm">
-                                    <a href="{{ $resource->url_or_path }}" target="_blank" class="text-emerald-700 hover:underline">
-                                        {{ $resource->title }}
-                                    </a>
-                                    <span class="text-xs text-gray-400">({{ \App\Modules\Project\Models\Resource::TYPES[$resource->type] ?? $resource->type }})</span>
-                                </li>
-                            @endforeach
-                        </ul>
-                    </div>
-                @endif
+                        {{-- Recursos generales de la fase --}}
+                        @if ($phase->resources->isNotEmpty())
+                            <div class="mt-4">
+                                <h3 class="text-xs font-semibold uppercase text-gray-400">Recursos</h3>
+                                <ul class="mt-2 space-y-1">
+                                    @foreach ($phase->resources as $resource)
+                                        <li class="text-sm">
+                                            <a href="{{ $resource->url_or_path }}" target="_blank" class="text-emerald-700 hover:underline">
+                                                {{ $resource->title }}
+                                            </a>
+                                            <span class="text-xs text-gray-400">({{ \App\Modules\Project\Models\Resource::TYPES[$resource->type] ?? $resource->type }})</span>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
 
-                {{-- Evidencias esperadas --}}
-                @if ($phase->expectedEvidences->isNotEmpty())
-                    <div class="mt-4">
-                        <h3 class="text-xs font-semibold uppercase text-gray-400">Evidencias esperadas</h3>
-                        <div class="mt-2 space-y-2">
-                            @foreach ($phase->expectedEvidences as $evidence)
-                                @php $evidenceStatus = $this->evidenceStatus($evidence); @endphp
-                                <a href="{{ route('student.evidence.show', ['project' => $project, 'evidence' => $evidence]) }}"
-                                   wire:navigate
-                                   class="flex items-start justify-between gap-4 border border-gray-100 rounded p-3 hover:border-emerald-300 hover:bg-emerald-50/50 transition-colors">
-                                    <div>
-                                        <p class="text-sm font-medium">
-                                            {{ \App\Modules\Project\Models\ExpectedEvidence::TYPES[$evidence->type] ?? $evidence->type }}
-                                        </p>
-                                        <p class="text-sm text-gray-600">{{ $evidence->description }}</p>
+                        {{-- Evidencias esperadas --}}
+                        @if ($phase->expectedEvidences->isNotEmpty())
+                            <div class="mt-4">
+                                <h3 class="text-xs font-semibold uppercase text-gray-400">Evidencias esperadas</h3>
+                                <div class="mt-2 space-y-2">
+                                    @foreach ($phase->expectedEvidences as $evidence)
+                                        @php $evidenceStatus = $this->evidenceStatus($evidence); @endphp
+                                        <a href="{{ route('student.evidence.show', ['project' => $project, 'evidence' => $evidence]) }}"
+                                           wire:navigate
+                                           class="flex items-start justify-between gap-4 border border-gray-100 rounded p-3 hover:border-emerald-300 hover:bg-emerald-50/50 transition-colors">
+                                            <div>
+                                                <p class="text-sm font-medium">
+                                                    {{ \App\Modules\Project\Models\ExpectedEvidence::TYPES[$evidence->type] ?? $evidence->type }}
+                                                </p>
+                                                <p class="text-sm text-gray-600">{{ $evidence->description }}</p>
 
-                                        @if ($evidenceStatus['status'] === 'evaluada')
-                                            @if ($evidenceStatus['feedback'])
-                                                <p class="text-sm text-gray-600 mt-2 italic">"{{ $evidenceStatus['feedback'] }}"</p>
-                                            @endif
-                                        @endif
-                                    </div>
+                                                @if ($evidenceStatus['status'] === 'evaluada')
+                                                    @if ($evidenceStatus['feedback'])
+                                                        <p class="text-sm text-gray-600 mt-2 italic">"{{ $evidenceStatus['feedback'] }}"</p>
+                                                    @endif
+                                                @endif
+                                            </div>
 
-                                    <div class="text-right whitespace-nowrap">
-                                        @if ($evidenceStatus['status'] === 'pendiente')
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
-                                                Pendiente
-                                            </span>
-                                        @elseif ($evidenceStatus['status'] === 'entregada')
-                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
-                                                Entregada
-                                            </span>
-                                        @elseif ($evidenceStatus['level'])
-                                            <span @class([
-                                                'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
-                                                $levelColorClasses[$evidenceStatus['level']->key] ?? 'bg-gray-100 text-gray-500',
-                                            ])>
-                                                {{ $evidenceStatus['level']->label }}
-                                            </span>
-                                        @endif
-                                    </div>
-                                </a>
-                            @endforeach
-                        </div>
-                    </div>
-                @endif
-            </section>
-        @endforeach
-    </div>
-
-    <div class="mt-8">
-        <livewire:student.forum-thread-list :project="$project" />
-    </div>
-
-    {{-- Chat privado con el docente (Hito de chat privado): alcance de
-         PROYECTO, no de evidencia puntual -- reemplaza el "Próximamente"
-         que vivía antes en EvidenceShow. El de equipo solo se muestra si
-         $myTeam existe (el propio estudiante integra un ProjectTeam de
-         este proyecto); el individual siempre está disponible. --}}
-    <div id="chat-individual" class="mt-8">
-        <livewire:shared.private-chat-panel
-            :project="$project"
-            type="individual"
-            :student="auth()->user()"
-            :key="'chat-individual-'.$project->id"
-        />
-    </div>
-
-    @if ($myTeam)
-        <div id="chat-team" class="mt-8">
-            <livewire:shared.private-chat-panel
-                :project="$project"
-                type="team"
-                :team="$myTeam"
-                :key="'chat-team-'.$myTeam->id"
-            />
+                                            <div class="text-right whitespace-nowrap">
+                                                @if ($evidenceStatus['status'] === 'pendiente')
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500">
+                                                        Pendiente
+                                                    </span>
+                                                @elseif ($evidenceStatus['status'] === 'entregada')
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700">
+                                                        Entregada
+                                                    </span>
+                                                @elseif ($evidenceStatus['level'])
+                                                    <span @class([
+                                                        'inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium',
+                                                        $levelColorClasses[$evidenceStatus['level']->key] ?? 'bg-gray-100 text-gray-500',
+                                                    ])>
+                                                        {{ $evidenceStatus['level']->label }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    </section>
+                @endforeach
+            </div>
         </div>
-    @endif
+
+        <div class="space-y-8">
+            <div>
+                <livewire:student.forum-thread-list :project="$project" />
+            </div>
+
+            {{-- Chat privado con el docente (Hito de chat privado): alcance de
+                 PROYECTO, no de evidencia puntual -- reemplaza el "Próximamente"
+                 que vivía antes en EvidenceShow. El de equipo solo se muestra si
+                 $myTeam existe (el propio estudiante integra un ProjectTeam de
+                 este proyecto); el individual siempre está disponible. --}}
+            <div id="chat-individual">
+                <livewire:shared.private-chat-panel
+                    :project="$project"
+                    type="individual"
+                    :student="auth()->user()"
+                    :key="'chat-individual-'.$project->id"
+                />
+            </div>
+
+            @if ($myTeam)
+                <div id="chat-team">
+                    <livewire:shared.private-chat-panel
+                        :project="$project"
+                        type="team"
+                        :team="$myTeam"
+                        :key="'chat-team-'.$myTeam->id"
+                    />
+                </div>
+            @endif
+        </div>
+    </div>
 </div>

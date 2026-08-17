@@ -42,7 +42,7 @@
             Todavía no hay proyectos disponibles para tu ciclo.
         </p>
     @else
-        <div class="grid gap-4 sm:grid-cols-2">
+        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($projects as $project)
                 @php $progressPct = $progressByProject->get($project->id)?->progress_pct ?? 0; @endphp
                 <a href="{{ route('student.projects.show', $project->uuid) }}" wire:navigate

@@ -28,8 +28,15 @@ use Livewire\Component;
  * válido sin ambigüedad porque el mecanismo de entrega de sesión es
  * auth-switch real (Auth::loginUsingId) -- auth()->user() durante una
  * sesión entregada ES el estudiante, no hay "delegación" que distinguir.
+ *
+ * maxWidth (hito de layout ancho): pide un contenedor más ancho al layout
+ * portal vía el segundo parámetro de #[Layout] (mecanismo idiomático de
+ * Livewire 3 -- BaseLayout::$params se pasa como datos al @component() de
+ * la vista, ver vendor/livewire/livewire/src/Features/SupportPageComponents),
+ * para que quepa el grid de dos columnas (fases | foro+chats) sin apretarlo
+ * dentro del max-w-3xl por defecto del resto del portal.
  */
-#[Layout('layouts.portal')]
+#[Layout('layouts.portal', ['maxWidth' => 'max-w-6xl'])]
 class ProjectShow extends Component
 {
     public Project $project;

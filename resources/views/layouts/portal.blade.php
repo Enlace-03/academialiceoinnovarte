@@ -40,7 +40,7 @@
         </header>
     @endauth
 
-    <main class="max-w-3xl mx-auto p-6">
+    <main class="{{ $maxWidth ?? 'max-w-3xl' }} mx-auto p-6">
         {{ $slot }}
     </main>
 
