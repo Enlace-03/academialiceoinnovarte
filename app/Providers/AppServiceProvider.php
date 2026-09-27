@@ -50,11 +50,13 @@ use App\Modules\Tracking\Listeners\RecordForumPostLiked;
 use App\Modules\Tracking\Listeners\RecordForumPostUnliked;
 use App\Modules\Tracking\Listeners\RecordSubmissionEvaluated;
 use App\Modules\Tracking\Listeners\RecordSubmissionRegistered;
+use App\Http\Middleware\ExpireDeliveredStudentSession;
 use App\Policies\UserPolicy;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Livewire\Livewire;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -91,6 +93,15 @@ class AppServiceProvider extends ServiceProvider
         Gate::before(fn ($user, $ability) => $user->hasRole('super_admin') ? true : null);
 
         Project::observe(ProjectObserver::class);
+
+        // Sesión entregada (Hito 3b-2): sin esto, ExpireDeliveredStudentSession
+        // solo corre en el GET inicial de cada página Livewire -- los POST
+        // /livewire/update posteriores (submit(), enviar mensaje de chat, etc.)
+        // lo saltaban, así que una sesión expirada seguía pudiendo escribir
+        // mientras la pestaña siguiera abierta. Livewire solo reaplica los
+        // middleware que la ruta original ya tenía, así que no afecta a
+        // /admin ni /academia.
+        Livewire::addPersistentMiddleware([ExpireDeliveredStudentSession::class]);
 
         // Tracking (Hito 4): registro explícito, igual que Policies/Observer
         // arriba -- este proyecto no usa auto-discovery de Listeners (viven
