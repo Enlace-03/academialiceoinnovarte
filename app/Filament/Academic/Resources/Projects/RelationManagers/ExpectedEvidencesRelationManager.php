@@ -128,6 +128,7 @@ class ExpectedEvidencesRelationManager extends RelationManager
                         FileUpload::make('file_path')
                             ->label('Foto')
                             ->image()
+                            ->maxSize(8192)
                             ->disk('local')
                             ->directory('submissions')
                             ->storeFileNamesIn('original_filename')
