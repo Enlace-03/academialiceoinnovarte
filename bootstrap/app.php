@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\ExpireDeliveredStudentSession;
+use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -22,6 +23,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => RoleMiddleware::class,
             'expire-delivered-session' => ExpireDeliveredStudentSession::class,
         ]);
+
+        // Global (no solo grupo 'web'): los paneles Filament arman su propio
+        // stack de middleware. Ver el docblock de SecurityHeaders.
+        $middleware->append(SecurityHeaders::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
