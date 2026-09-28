@@ -6,6 +6,8 @@ namespace App\Livewire\Shared;
 
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
@@ -22,11 +24,21 @@ use Livewire\Component;
  * a los ~400 días por defecto de Laravel, dado que la cuenta puede acceder a
  * datos de un menor); cualquier otro rol usa sesión estándar sin persistencia
  * extendida.
+ *
+ * Límite de intentos: MAX_FAILED_ATTEMPTS fallos por DECAY_SECONDS, por
+ * pareja correo+IP (no solo IP -- en un colegio muchos estudiantes salen
+ * por la misma IP pública, y bloquear la IP entera dejaría a un salón sin
+ * poder entrar por culpa de uno). Solo cuentan los fallos; un login exitoso
+ * limpia el contador. El bloqueo aplica incluso con la contraseña correcta.
  */
 #[Layout('layouts.portal')]
 class Login extends Component
 {
     private const REMEMBER_DURATION_IN_MINUTES = 90 * 24 * 60;
+
+    private const MAX_FAILED_ATTEMPTS = 5;
+
+    private const DECAY_SECONDS = 60;
 
     public string $email = '';
 
@@ -43,11 +55,23 @@ class Login extends Component
             'password' => ['required', 'string'],
         ]);
 
+        $throttleKey = $this->throttleKey();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_FAILED_ATTEMPTS)) {
+            $this->errorMessage = 'Demasiados intentos. Intenta de nuevo en '.RateLimiter::availableIn($throttleKey).' segundos.';
+
+            return;
+        }
+
         if (! Auth::validate(['email' => $this->email, 'password' => $this->password])) {
+            RateLimiter::hit($throttleKey, self::DECAY_SECONDS);
+
             $this->errorMessage = 'Estas credenciales no coinciden con nuestros registros.';
 
             return;
         }
+
+        RateLimiter::clear($throttleKey);
 
         $user = User::where('email', $this->email)->firstOrFail();
 
@@ -70,6 +94,11 @@ class Login extends Component
         // única forma confiable de que el scroll a la fase funcione; mismo
         // bug ya encontrado y resuelto en NotificationBell::visit().
         $this->redirect(session()->pull('url.intended', route('portal.home')));
+    }
+
+    private function throttleKey(): string
+    {
+        return 'portal-login:'.Str::lower($this->email).'|'.request()->ip();
     }
 
     public function render()
