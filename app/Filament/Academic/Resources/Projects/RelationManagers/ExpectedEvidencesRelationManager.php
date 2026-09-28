@@ -256,6 +256,24 @@ class ExpectedEvidencesRelationManager extends RelationManager
                             Textarea::make('feedback')
                                 ->label('Comentario general')
                                 ->rows(2),
+
+                            // Opcional: el docente puede devolver solo texto, solo
+                            // archivo o ambos. Si ya había un documento y no se sube
+                            // otro, se conserva. Es la devolución del docente
+                            // (EvaluationAttachment), no evidencia del estudiante.
+                            FileUpload::make('feedback_document_path')
+                                ->label('Documento de retroalimentación (opcional)')
+                                ->acceptedFileTypes([
+                                    'application/pdf',
+                                    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                    'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                                ])
+                                ->rules(['nullable', 'mimes:pdf,docx,xlsx,pptx', new ValidDocumentUpload()])
+                                ->maxSize(10240)
+                                ->disk('local')
+                                ->directory(EvaluateSubmissionAction::FEEDBACK_DIRECTORY)
+                                ->storeFileNamesIn('feedback_document_original_filename'),
                         ])
                         ->columns(2)
                         ->addable(false)
@@ -288,6 +306,14 @@ class ExpectedEvidencesRelationManager extends RelationManager
                         $submission,
                         $row['results'] ?? [],
                         $row['feedback'] ?? null,
+                        feedbackDocument: filled($row['feedback_document_path'] ?? null)
+                            ? [
+                                'stored_path' => is_array($row['feedback_document_path'])
+                                    ? (string) reset($row['feedback_document_path'])
+                                    : $row['feedback_document_path'],
+                                'original_filename' => $row['feedback_document_original_filename'] ?? null,
+                            ]
+                            : null,
                     );
                 }
             });

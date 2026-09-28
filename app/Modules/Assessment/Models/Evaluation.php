@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -46,6 +47,11 @@ class Evaluation extends Model
     public function evaluatedBy(): BelongsTo
     {
         return $this->belongsTo(User::class, 'evaluated_by');
+    }
+
+    public function attachment(): HasOne
+    {
+        return $this->hasOne(EvaluationAttachment::class);
     }
 
     public function results(): HasMany
