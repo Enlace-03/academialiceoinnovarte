@@ -3,11 +3,12 @@
 Registro de hallazgos de seguridad corregidos, decisiones de diseño confirmadas
 (que **no** son bugs) y pendientes antes del primer deploy con datos reales.
 
-**Fuente de la sección 1:** los 22 commits de `f8990ba` a `f93f29e` (ambos
-inclusive), leídos del mensaje y del diff de cada uno. Dos commits del rango no
-son correcciones de seguridad en sentido estricto y se listan aparte al final de
-la sección 1: `42206e0` (validación de formulario) y `5d937d9` (funcionalidad de
-moderación).
+**Fuente de la sección 1:** el historial de commits desde `f8990ba` en adelante,
+leído del mensaje y del diff de cada uno. Recoge los hallazgos de la auditoría de
+seguridad y añade la función de boletines; cada entrada cita su commit, así que
+esa tabla es el detalle por commit. Los commits que no son correcciones de
+seguridad en sentido estricto (validación de formulario, funcionalidad de
+moderación) se listan aparte, al final de la sección 1.
 
 ---
 
