@@ -34,6 +34,22 @@ class ReportCardScaleTest extends TestCase
         }
     }
 
+    public function test_performance_labels_match_the_confirmed_table(): void
+    {
+        $this->assertSame('Ausente o fuera del proceso', ReportCardScale::performanceLabel(1));
+        $this->assertSame('Bajo', ReportCardScale::performanceLabel(2));
+        $this->assertSame('Básico', ReportCardScale::performanceLabel(3));
+        $this->assertSame('Alto', ReportCardScale::performanceLabel(4));
+        $this->assertSame('Superior', ReportCardScale::performanceLabel(5));
+    }
+
+    public function test_a_number_outside_the_scale_has_no_label(): void
+    {
+        $this->expectException(InvalidArgumentException::class);
+
+        ReportCardScale::performanceLabel(6);
+    }
+
     public function test_an_unknown_level_key_throws_instead_of_guessing(): void
     {
         $this->expectException(InvalidArgumentException::class);

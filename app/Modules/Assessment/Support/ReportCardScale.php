@@ -38,9 +38,24 @@ final class ReportCardScale
         'logro_destacado' => 5,
     ];
 
+    private const PERFORMANCE_LABELS = [
+        self::ABSENT => 'Ausente o fuera del proceso',
+        2 => 'Bajo',
+        3 => 'Básico',
+        4 => 'Alto',
+        5 => 'Superior',
+    ];
+
     public static function fromLevelKey(string $levelKey): int
     {
         return self::BY_LEVEL_KEY[$levelKey]
             ?? throw new InvalidArgumentException("Nivel de rúbrica desconocido para la escala del boletín: '{$levelKey}'.");
+    }
+
+    /** Nombre del desempeño (Bajo, Básico, Alto, Superior) para un número 1-5 de la tabla de arriba. */
+    public static function performanceLabel(int $number): string
+    {
+        return self::PERFORMANCE_LABELS[$number]
+            ?? throw new InvalidArgumentException("Número fuera de la escala 1-5 del boletín: {$number}.");
     }
 }
