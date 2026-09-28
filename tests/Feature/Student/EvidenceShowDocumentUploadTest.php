@@ -159,6 +159,39 @@ class EvidenceShowDocumentUploadTest extends TestCase
         $this->assertStringContainsString('documento.pdf', $response->headers->get('content-disposition'));
     }
 
+    public function test_a_photo_attachment_is_served_inline_without_an_attachment_disposition(): void
+    {
+        $submission = Submission::factory()->create(['student_id' => $this->student->id]);
+        $attachment = SubmissionAttachment::factory()->photo()->create(['submission_id' => $submission->id]);
+
+        $response = $this->get(route('submissions.attachments.show', $attachment));
+
+        $response->assertOk();
+        $disposition = $response->headers->get('content-disposition');
+        $this->assertTrue($disposition === null || ! str_contains($disposition, 'attachment'));
+    }
+
+    public function test_a_document_with_a_path_traversal_filename_is_downloaded_with_a_sanitized_name(): void
+    {
+        Storage::disk('local')->put('submissions/stored.pdf', $this->makePdf());
+
+        $submission = Submission::factory()->create(['student_id' => $this->student->id]);
+        $attachment = SubmissionAttachment::factory()->create([
+            'submission_id' => $submission->id,
+            'type' => 'document',
+            'file_path' => 'submissions/stored.pdf',
+            'original_filename' => '../../.env',
+        ]);
+
+        $response = $this->get(route('submissions.attachments.show', $attachment));
+
+        $response->assertOk();
+        $disposition = $response->headers->get('content-disposition');
+        $this->assertStringContainsString('attachment', $disposition);
+        $this->assertStringNotContainsString('..', $disposition);
+        $this->assertStringNotContainsString('/', $disposition);
+    }
+
     private function makePdf(): string
     {
         return "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF";

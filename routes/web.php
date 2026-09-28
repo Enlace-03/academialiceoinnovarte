@@ -148,7 +148,13 @@ Route::get('/entregas/adjuntos/{attachment:uuid}', function (SubmissionAttachmen
     $disk = Storage::disk($attachment->file_disk);
 
     if ($attachment->type === 'document') {
-        return $disk->download($attachment->file_path, $attachment->original_filename ?? 'documento');
+        // basename() descarta cualquier ruta (../, directorios) y los caracteres
+        // de control/separadores restantes se eliminan; Symfony lanza
+        // excepción (500) si el nombre trae "/" o "\".
+        $filename = basename(str_replace('\\', '/', (string) $attachment->original_filename));
+        $filename = trim(preg_replace('/[\x00-\x1F\x7F\/\\\\]+/', '', $filename) ?? '', ". \t");
+
+        return $disk->download($attachment->file_path, $filename !== '' ? $filename : 'documento');
     }
 
     return $disk->response($attachment->file_path);
