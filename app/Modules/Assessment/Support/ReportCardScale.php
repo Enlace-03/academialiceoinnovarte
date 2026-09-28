@@ -21,6 +21,11 @@ use InvalidArgumentException;
  * | logro_esperado   | Logro esperado   | 4      | Alto                                   |
  * | logro_destacado  | Logro destacado  | 5      | Superior                               |
  *
+ * OJO: esta clase solo convierte un nivel YA elegido. La regla que elige ese
+ * nivel al agregar varias evaluaciones (moda + desempate al nivel más bajo,
+ * en GenerateReportCardAction::dominant()) es PROVISIONAL, pendiente de
+ * confirmación de Rafa; no la tomes como definitiva.
+ *
  * El 1 NO corresponde a ningún nivel de la rúbrica: es ABSENT, un caso
  * especial que quien genera el boletín decide por otra vía. Ningún nivel se
  * convierte en 1, y una key desconocida lanza excepción en vez de adivinar

@@ -30,7 +30,13 @@ use RuntimeException;
  * proyectos del año lectivo vigente. Nivel por campo de pensamiento y por
  * proyecto = moda de los niveles de los EvaluationResult, empate gana el
  * nivel más bajo (mismo criterio conservador que
- * Evaluation::consolidatedLevel()), convertido con ReportCardScale. Lo que no
+ * Evaluation::consolidatedLevel()), convertido con ReportCardScale.
+ *
+ * PROVISIONAL (TODO: pendiente de confirmación de Rafa): la regla de
+ * agregación -- moda + desempate al nivel más bajo -- viene de
+ * Evaluation::consolidatedLevel() y de TODO.md #30, pero NO está confirmada
+ * como la regla definitiva del boletín oficial (podría preferirse otra, p. ej.
+ * un promedio ponderado). Un cambio de regla se hace en dominant(). Lo que no
  * tiene evaluaciones no se convierte ni se inventa un 1: el caso de ausencia
  * (ReportCardScale::ABSENT) todavía no tiene un dato que lo decida.
  *
@@ -196,6 +202,7 @@ final class GenerateReportCardAction
 
     /**
      * Moda de los niveles; empate gana el nivel más bajo (menor `order`).
+     * PROVISIONAL, pendiente de confirmación de Rafa (ver el docblock de la clase).
      *
      * @param  Collection<int, int>  $levelIds
      * @param  Collection<int, RubricLevel>  $levels
