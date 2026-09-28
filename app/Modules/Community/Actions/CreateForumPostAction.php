@@ -44,7 +44,20 @@ final class CreateForumPostAction
         $photos = $data['photos'] ?? [];
 
         if ($parentPostId !== null) {
-            $parentPost = ForumPost::findOrFail($parentPostId);
+            $parentPost = ForumPost::find($parentPostId);
+
+            // Mismo mensaje para "no existe" y "existe en otro hilo": distinguirlos
+            // le daría a un cliente malicioso un oráculo para enumerar posts ajenos.
+            // Sin este chequeo, un post con parent_post_id de OTRO hilo se crea
+            // igual (la FK no lo impide) -- ForumPost::replies() no filtra por
+            // forum_thread_id, así que ese post huérfano termina apareciendo
+            // anidado bajo su padre real al ver ese otro hilo, aunque el autor
+            // nunca haya sido autorizado a verlo.
+            if ($parentPost === null || $parentPost->forum_thread_id !== $thread->id) {
+                throw ValidationException::withMessages([
+                    'parent_post_id' => 'No se puede responder a esa publicación.',
+                ]);
+            }
 
             if ($parentPost->parent_post_id !== null) {
                 throw ValidationException::withMessages([

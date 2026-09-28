@@ -109,6 +109,31 @@ class StudentForumFlowTest extends TestCase
         $this->assertDatabaseMissing('forum_posts', ['content' => 'Intento inválido']);
     }
 
+    /**
+     * Sin este chequeo, la FK por sí sola no impide que parent_post_id apunte
+     * a un post de OTRO hilo -- el post se crea igual, y como
+     * ForumPost::replies() no filtra por forum_thread_id, esa respuesta
+     * termina apareciendo anidada bajo su padre real al ver el hilo B, pese a
+     * que el estudiante nunca fue autorizado a verlo (confirmado en vivo
+     * antes de este fix). Ver CreateForumPostAction para el detalle.
+     */
+    public function test_student_cannot_reply_to_a_post_in_another_thread(): void
+    {
+        $threadA = ForumThread::factory()->create(['project_id' => $this->project->id]);
+        $threadB = ForumThread::factory()->create(['project_id' => $this->project->id]);
+        $rootPostB = ForumPost::factory()->create(['forum_thread_id' => $threadB->id]);
+
+        $this->actingAs($this->student);
+
+        Livewire::test(ForumThreadShow::class, ['project' => $this->project, 'thread' => $threadA])
+            ->set('replyingToPostId', $rootPostB->id)
+            ->set('replyContent', 'Intento cruzado')
+            ->call('submitReply')
+            ->assertHasErrors('parent_post_id');
+
+        $this->assertDatabaseMissing('forum_posts', ['content' => 'Intento cruzado']);
+    }
+
     public function test_cross_cycle_student_cannot_view_thread_via_direct_url(): void
     {
         $thread = ForumThread::factory()->create(['project_id' => $this->project->id]);
