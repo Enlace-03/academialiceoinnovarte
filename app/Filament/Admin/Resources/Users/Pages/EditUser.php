@@ -3,9 +3,11 @@
 namespace App\Filament\Admin\Resources\Users\Pages;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Modules\Community\Actions\UserHasCommunityContentAction;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 
 class EditUser extends EditRecord
@@ -54,7 +56,22 @@ class EditUser extends EditRecord
         return [
             ...$formActions,
             DeleteAction::make()
-                ->visible(fn () => $this->record->id !== auth()->id()),
+                ->visible(fn () => $this->record->id !== auth()->id())
+                // chat_messages/private_chat_messages/forum_posts/forum_threads
+                // usan restrictOnDelete() (migración 2027_01_01_000450) --
+                // sin este chequeo, el DELETE llegaría hasta la BD y el
+                // usuario vería la excepción SQL cruda en vez de un mensaje
+                // entendible.
+                ->before(function (DeleteAction $action): void {
+                    if (app(UserHasCommunityContentAction::class)->execute($this->record)) {
+                        Notification::make()
+                            ->warning()
+                            ->title('Este usuario tiene mensajes; desactívalo en vez de borrarlo.')
+                            ->send();
+
+                        $action->halt();
+                    }
+                }),
         ];
     }
 
