@@ -76,11 +76,11 @@
                         <div class="border border-gray-100 rounded p-2 text-sm">
                             @if ($attachment->type === 'photo')
                                 @if ($attachment->isImage())
-                                    <a href="{{ route('submissions.attachments.show', $attachment) }}" target="_blank">
+                                    <a href="{{ route('submissions.attachments.show', $attachment) }}" target="_blank" rel="noopener noreferrer">
                                         <img src="{{ route('submissions.attachments.show', $attachment) }}" alt="{{ $attachment->original_filename }}" class="max-h-40 rounded">
                                     </a>
                                 @else
-                                    <a href="{{ route('submissions.attachments.show', $attachment) }}" target="_blank" class="text-emerald-700 hover:underline">
+                                    <a href="{{ route('submissions.attachments.show', $attachment) }}" target="_blank" rel="noopener noreferrer" class="text-emerald-700 hover:underline">
                                         📎 {{ $attachment->original_filename ?? 'Archivo' }}
                                     </a>
                                 @endif

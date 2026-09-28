@@ -20,7 +20,7 @@
                 @if ($post->photos->isNotEmpty())
                     <div class="mt-2 flex flex-wrap gap-2">
                         @foreach ($post->photos as $photo)
-                            <a href="{{ route('forum.photos.show', $photo->uuid) }}" target="_blank" class="block w-20 h-20 overflow-hidden rounded bg-gray-100">
+                            <a href="{{ route('forum.photos.show', $photo->uuid) }}" target="_blank" rel="noopener noreferrer" class="block w-20 h-20 overflow-hidden rounded bg-gray-100">
                                 <img src="{{ route('forum.photos.show', $photo->uuid) }}" alt="" class="w-full h-full object-cover" loading="lazy">
                             </a>
                         @endforeach

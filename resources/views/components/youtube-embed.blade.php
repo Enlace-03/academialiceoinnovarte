@@ -28,7 +28,7 @@
         ></iframe>
     </div>
 @else
-    <a href="{{ $url }}" target="_blank" rel="noopener" class="text-sm text-emerald-700 hover:underline break-all">
+    <a href="{{ $url }}" target="_blank" rel="noopener noreferrer" class="text-sm text-emerald-700 hover:underline break-all">
         {{ $url }}
     </a>
 @endif
