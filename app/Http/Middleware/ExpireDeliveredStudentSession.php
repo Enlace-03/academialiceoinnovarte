@@ -55,8 +55,45 @@ class ExpireDeliveredStudentSession
             return redirect()->route('login');
         }
 
-        $request->session()->put('active_grant_last_seen_at', now()->toISOString());
+        if (! self::isPurePoll($request)) {
+            $request->session()->put('active_grant_last_seen_at', now()->toISOString());
+        }
 
         return $next($request);
+    }
+
+    /**
+     * Un wire:poll sin expresión (los tres del proyecto: notification-bell,
+     * group-chat, private-chat-panel) dispara $wire.$commit() del lado del
+     * cliente, que viaja SIN 'calls' (array vacío) y SIN 'updates' (vacío) --
+     * verificado contra el JS real de Livewire (wireProperty('$commit', ...)
+     * / Commit.toRequestPayload()), no contra la forma asumida de
+     * calls:[{method:'$refresh'}] (esa sí ocurre si alguien escribe
+     * wire:poll="$refresh" explícito, así que también se cubre por si acaso).
+     * Sin este chequeo, un sondeo periódico sin actividad real del usuario
+     * mantendría 'active_grant_last_seen_at' fresco para siempre y la sesión
+     * entregada nunca expiraría mientras la pestaña siguiera abierta.
+     */
+    private static function isPurePoll(Request $request): bool
+    {
+        $components = $request->input('components');
+
+        if (! is_array($components) || $components === []) {
+            return false;
+        }
+
+        foreach ($components as $component) {
+            if (! empty($component['updates'] ?? [])) {
+                return false;
+            }
+
+            foreach ($component['calls'] ?? [] as $call) {
+                if (($call['method'] ?? null) !== '$refresh') {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 }
