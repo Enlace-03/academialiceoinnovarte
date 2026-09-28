@@ -22,9 +22,9 @@ use Illuminate\Validation\ValidationException;
  * nueva (unique(expected_evidence_id, student_id) lo garantiza).
  *
  * data['attachments'] (opcional): array de
- * ['type'=>'photo','existing_id'=>?int,'file'=>?UploadedFile] (Livewire,
+ * ['type'=>'photo'|'document','existing_id'=>?int,'file'=>?UploadedFile] (Livewire,
  * WithFileUploads entrega un temporal sin guardar -- el Action lo guarda),
- * ['type'=>'photo','existing_id'=>?int,'stored_path'=>?string,'original_filename'=>?string]
+ * ['type'=>'photo'|'document','existing_id'=>?int,'stored_path'=>?string,'original_filename'=>?string]
  * (Filament FileUpload ya guardó el archivo en disco ANTES de que corra el
  * action() de la Action -- a diferencia de Livewire, acá no hay nada que
  * guardar, solo registrar la ruta que Filament ya dejó en 'submissions'), o
@@ -114,10 +114,10 @@ final class RegisterSubmissionAction
                 continue;
             }
 
-            if ($attachment['type'] === 'photo') {
+            if ($attachment['type'] === 'photo' || $attachment['type'] === 'document') {
                 SubmissionAttachment::create([
                     'submission_id' => $submission->id,
-                    'type' => 'photo',
+                    'type' => $attachment['type'],
                     'file_disk' => 'local',
                     'file_path' => isset($attachment['stored_path'])
                         ? $attachment['stored_path']

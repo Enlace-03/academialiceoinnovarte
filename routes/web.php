@@ -131,14 +131,27 @@ Route::get('/foro/fotos/{photo:uuid}', function (ForumPostPhoto $photo) {
  * forum.photos.show: disco 'local' (privado), autorización delegada 100% a
  * SubmissionPolicy::view() -- un solo punto de verdad, el mismo que decide
  * si la entrega aparece en la pantalla del estudiante o del docente. Solo
- * sirve adjuntos type=photo con archivo; uno type=link no tiene file_path,
- * nunca se navega a esta ruta para esos (se renderiza directo con la url
- * guardada).
+ * sirve adjuntos type=photo/document con archivo; uno type=link no tiene
+ * file_path, nunca se navega a esta ruta para esos (se renderiza directo con
+ * la url guardada).
+ *
+ * type=document se sirve con download() (Content-Disposition: attachment,
+ * nombre saneado por Symfony's makeDisposition dentro del propio Laravel) en
+ * vez de response() (inline) -- un PDF/docx/xlsx/pptx no tiene por qué
+ * abrirse dentro del navegador, y el nombre real (original_filename) es más
+ * útil al descargar que el basename generado al guardar. Las fotos siguen
+ * exactamente igual que antes (inline, sin nombre explícito).
  */
 Route::get('/entregas/adjuntos/{attachment:uuid}', function (SubmissionAttachment $attachment) {
     Gate::authorize('view', $attachment->submission);
 
-    return Storage::disk($attachment->file_disk)->response($attachment->file_path);
+    $disk = Storage::disk($attachment->file_disk);
+
+    if ($attachment->type === 'document') {
+        return $disk->download($attachment->file_path, $attachment->original_filename ?? 'documento');
+    }
+
+    return $disk->response($attachment->file_path);
 })->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('submissions.attachments.show');
 
 /**

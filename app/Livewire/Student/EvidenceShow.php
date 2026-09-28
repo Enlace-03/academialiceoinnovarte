@@ -9,6 +9,7 @@ use App\Modules\Assessment\Models\Submission;
 use App\Modules\Project\Models\ExpectedEvidence;
 use App\Modules\Project\Models\Project;
 use App\Modules\Shared\Support\YoutubeUrlDetector;
+use App\Rules\ValidDocumentUpload;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -52,6 +53,15 @@ class EvidenceShow extends Component
     /** KB, antes de comprimir -- mismo límite que ForumThreadShow. */
     private const MAX_PHOTO_KB = 8192;
 
+    /**
+     * KB. WAMP local tiene upload_max_filesize=2M / post_max_size=8M (por
+     * debajo de este tope) -- ver nota en CLAUDE.md/php.ini local; producción
+     * (cPanel) sí lo permite con margen (1G en ambos, ver CLAUDE.md
+     * "Producción real"). Probar manualmente un archivo >2MB en local
+     * requiere subir esos dos valores primero.
+     */
+    private const MAX_DOCUMENT_KB = 10240;
+
     public Project $project;
 
     public ExpectedEvidence $evidence;
@@ -62,6 +72,9 @@ class EvidenceShow extends Component
 
     /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
     public array $newPhotos = [];
+
+    /** @var array<\Livewire\Features\SupportFileUploads\TemporaryUploadedFile> */
+    public array $newDocuments = [];
 
     public string $linkInput = '';
 
@@ -165,6 +178,7 @@ class EvidenceShow extends Component
             'is_youtube' => $attachment->is_youtube,
         ])->all();
         $this->newPhotos = [];
+        $this->newDocuments = [];
         $this->newLinks = [];
         $this->linkInput = '';
     }
@@ -183,6 +197,12 @@ class EvidenceShow extends Component
     {
         unset($this->newPhotos[$index]);
         $this->newPhotos = array_values($this->newPhotos);
+    }
+
+    public function removeNewDocument(int $index): void
+    {
+        unset($this->newDocuments[$index]);
+        $this->newDocuments = array_values($this->newDocuments);
     }
 
     public function removeNewLink(int $index): void
@@ -212,6 +232,8 @@ class EvidenceShow extends Component
             'textContent' => 'nullable|string|max:2000',
             'newPhotos' => 'array',
             'newPhotos.*' => 'image|max:'.self::MAX_PHOTO_KB,
+            'newDocuments' => 'array',
+            'newDocuments.*' => ['mimes:pdf,docx,xlsx,pptx', new ValidDocumentUpload(), 'max:'.self::MAX_DOCUMENT_KB],
             'newLinks' => 'array',
             'newLinks.*.url' => 'url:http,https|max:2000',
         ]);
@@ -224,6 +246,10 @@ class EvidenceShow extends Component
 
         foreach ($this->newPhotos as $photo) {
             $attachments[] = ['type' => 'photo', 'file' => $photo];
+        }
+
+        foreach ($this->newDocuments as $document) {
+            $attachments[] = ['type' => 'document', 'file' => $document];
         }
 
         foreach ($this->newLinks as $link) {
@@ -240,6 +266,7 @@ class EvidenceShow extends Component
         $this->editing = false;
         $this->textContent = '';
         $this->newPhotos = [];
+        $this->newDocuments = [];
         $this->newLinks = [];
         $this->linkInput = '';
         $this->keptExisting = [];

@@ -14,11 +14,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Facades\Storage;
 
 /**
- * type: photo | link. A diferencia de GalleryPhoto/ForumPostPhoto (siempre
- * foto), aquí no todo registro tiene archivo -- no puede reusar el trait
- * CompressesPhotoUploads tal cual (asume file_path siempre presente). La
- * misma lógica de compresión/limpieza vive acá, condicionada a
- * type === 'photo'.
+ * type: photo | link | document. A diferencia de GalleryPhoto/ForumPostPhoto
+ * (siempre foto), aquí no todo registro tiene archivo -- no puede reusar el
+ * trait CompressesPhotoUploads tal cual (asume file_path siempre presente).
+ * La misma lógica de compresión/limpieza vive acá, condicionada a
+ * type === 'photo' -- 'document' comparte columnas con 'photo'
+ * (file_disk/file_path/original_filename) pero nunca se comprime ni cuenta
+ * como imagen (ver booted()/isImage()).
  */
 #[Fillable([
     'submission_id', 'type', 'file_disk', 'file_path', 'original_filename',
@@ -28,7 +30,7 @@ class SubmissionAttachment extends Model
 {
     use HasFactory, HasUuids;
 
-    public const TYPES = ['photo', 'link'];
+    public const TYPES = ['photo', 'link', 'document'];
 
     protected $casts = [
         'is_youtube' => 'boolean',

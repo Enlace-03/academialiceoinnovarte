@@ -91,6 +91,8 @@
                                     <div class="min-w-0 flex-1">
                                         @if ($existing['type'] === 'photo')
                                             <span class="truncate">📎 {{ $existing['original_filename'] ?? 'Foto' }}</span>
+                                        @elseif ($existing['type'] === 'document')
+                                            <span class="truncate">📄 {{ $existing['original_filename'] ?? 'Documento' }}</span>
                                         @else
                                             <x-youtube-embed :url="$existing['url']" />
                                         @endif
@@ -103,6 +105,13 @@
                                 <div class="flex items-center justify-between gap-2 border border-gray-100 rounded p-2 text-sm">
                                     <span class="min-w-0 flex-1 truncate">📎 {{ $photo->getClientOriginalName() }}</span>
                                     <button type="button" wire:click="removeNewPhoto({{ $index }})" class="text-xs text-red-600 hover:underline shrink-0">Quitar</button>
+                                </div>
+                            @endforeach
+
+                            @foreach ($newDocuments as $index => $document)
+                                <div class="flex items-center justify-between gap-2 border border-gray-100 rounded p-2 text-sm">
+                                    <span class="min-w-0 flex-1 truncate">📄 {{ $document->getClientOriginalName() }}</span>
+                                    <button type="button" wire:click="removeNewDocument({{ $index }})" class="text-xs text-red-600 hover:underline shrink-0">Quitar</button>
                                 </div>
                             @endforeach
 
@@ -122,12 +131,18 @@
                                 <input type="file" wire:model="newPhotos" multiple accept="image/*" class="hidden">
                             </label>
 
+                            <label class="text-xs px-3 py-1.5 rounded border border-gray-300 cursor-pointer hover:bg-gray-50">
+                                Agregar documento
+                                <input type="file" wire:model="newDocuments" multiple accept=".pdf,.docx,.xlsx,.pptx" class="hidden">
+                            </label>
+
                             <div class="flex items-center gap-1">
                                 <input type="url" wire:model="linkInput" placeholder="https://..." class="text-xs rounded border-gray-300 py-1.5">
                                 <button type="button" wire:click="addLink" class="text-xs px-3 py-1.5 rounded border border-gray-300 hover:bg-gray-50">Agregar enlace</button>
                             </div>
                         </div>
                         @error('newPhotos.*') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
+                        @error('newDocuments.*') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                         @error('linkInput') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                         @error('attachments') <p class="text-xs text-red-600 mt-1">{{ $message }}</p> @enderror
                     </div>
@@ -155,6 +170,10 @@
                                         📎 {{ $attachment->original_filename ?? 'Archivo' }}
                                     </a>
                                 @endif
+                            @elseif ($attachment->type === 'document')
+                                <a href="{{ route('submissions.attachments.show', $attachment) }}" target="_blank" rel="noopener noreferrer" class="text-emerald-700 hover:underline">
+                                    📄 {{ $attachment->original_filename ?? 'Documento' }}
+                                </a>
                             @else
                                 <x-youtube-embed :url="$attachment->url" />
                             @endif

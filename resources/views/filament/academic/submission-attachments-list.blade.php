@@ -23,6 +23,10 @@
                             📎 {{ $attachment->original_filename ?? 'Archivo' }}
                         </a>
                     @endif
+                @elseif ($attachment->type === 'document')
+                    <a href="{{ route('submissions.attachments.show', $attachment) }}" target="_blank" rel="noopener noreferrer" class="text-primary-600 hover:underline">
+                        📄 {{ $attachment->original_filename ?? 'Documento' }}
+                    </a>
                 @else
                     <x-youtube-embed :url="$attachment->url" />
                 @endif

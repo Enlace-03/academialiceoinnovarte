@@ -10,6 +10,7 @@ use App\Modules\Assessment\Models\RubricLevel;
 use App\Modules\Assessment\Models\Submission;
 use App\Modules\Assessment\Models\SubmissionAttachment;
 use App\Modules\Project\Models\ExpectedEvidence;
+use App\Rules\ValidDocumentUpload;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Hidden;
@@ -120,7 +121,7 @@ class ExpectedEvidencesRelationManager extends RelationManager
 
                         Select::make('type')
                             ->label('Tipo')
-                            ->options(['photo' => 'Foto', 'link' => 'Enlace'])
+                            ->options(['photo' => 'Foto', 'document' => 'Documento', 'link' => 'Enlace'])
                             ->default('photo')
                             ->required()
                             ->live(),
@@ -136,6 +137,24 @@ class ExpectedEvidencesRelationManager extends RelationManager
                             ->directory('submissions')
                             ->storeFileNamesIn('original_filename')
                             ->visible(fn (Get $get): bool => $get('type') === 'photo' && ! $get('existing_id')),
+
+                        // Campo propio (document_path), no comparte 'file_path' con la
+                        // foto de arriba: acceptedFileTypes/maxSize/validación son
+                        // distintos y ambos existen a la vez en el schema del Repeater.
+                        FileUpload::make('document_path')
+                            ->label('Documento')
+                            ->acceptedFileTypes([
+                                'application/pdf',
+                                'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+                            ])
+                            ->rules(['mimes:pdf,docx,xlsx,pptx', new ValidDocumentUpload()])
+                            ->maxSize(10240)
+                            ->disk('local')
+                            ->directory('submissions')
+                            ->storeFileNamesIn('document_original_filename')
+                            ->visible(fn (Get $get): bool => $get('type') === 'document' && ! $get('existing_id')),
 
                         TextInput::make('url')
                             ->label('URL')
@@ -159,6 +178,14 @@ class ExpectedEvidencesRelationManager extends RelationManager
                             'type' => 'photo',
                             'stored_path' => $row['file_path'],
                             'original_filename' => $row['original_filename'] ?? null,
+                        ];
+                    }
+
+                    if ($row['type'] === 'document') {
+                        return [
+                            'type' => 'document',
+                            'stored_path' => $row['document_path'],
+                            'original_filename' => $row['document_original_filename'] ?? null,
                         ];
                     }
 
