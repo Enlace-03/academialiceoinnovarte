@@ -4,6 +4,7 @@ namespace Tests\Feature\Identity;
 
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
 use App\Models\User;
+use App\Modules\Community\Actions\UserHasCommunityContentAction;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Community\Models\ForumPost;
 use App\Modules\Community\Models\ForumThread;
@@ -63,7 +64,30 @@ class UserResourceDeleteTest extends TestCase
 
         Livewire::test(EditUser::class, ['record' => $student->getRouteKey()])
             ->callAction(DeleteAction::class)
-            ->assertNotified();
+            ->assertNotified('No se puede eliminar: este usuario tiene mensajes o publicaciones. Desactívalo en su lugar.');
+
+        $this->assertModelExists($student);
+    }
+
+    public function test_the_friendly_message_is_shown_and_the_user_survives_when_the_precheck_misses_a_race(): void
+    {
+        $group = Group::factory()->create();
+        $student = User::factory()->create(['group_id' => $group->id])->assignRole('student');
+        ChatMessage::factory()->create(['group_id' => $group->id, 'user_id' => $student->id]);
+
+        // Simula la carrera: el chequeo previo dice "sin contenido" pero la FK
+        // restrictiva sí dispara al ejecutar el DELETE.
+        $this->app->instance(UserHasCommunityContentAction::class, new class
+        {
+            public function execute(User $user): bool
+            {
+                return false;
+            }
+        });
+
+        Livewire::test(EditUser::class, ['record' => $student->getRouteKey()])
+            ->callAction(DeleteAction::class)
+            ->assertNotified('No se puede eliminar: este usuario tiene mensajes o publicaciones. Desactívalo en su lugar.');
 
         $this->assertModelExists($student);
     }

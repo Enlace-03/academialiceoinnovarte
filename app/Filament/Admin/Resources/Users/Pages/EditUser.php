@@ -3,16 +3,20 @@
 namespace App\Filament\Admin\Resources\Users\Pages;
 
 use App\Filament\Admin\Resources\Users\UserResource;
+use App\Models\User;
 use App\Modules\Community\Actions\UserHasCommunityContentAction;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
+use Illuminate\Database\QueryException;
 
 class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
+
+    private const CANNOT_DELETE_MESSAGE = 'No se puede eliminar: este usuario tiene mensajes o publicaciones. Desactívalo en su lugar.';
 
     /**
      * Mismo mecanismo y misma razón que CreateUser::authorizeResourceAccess()
@@ -59,19 +63,31 @@ class EditUser extends EditRecord
                 ->visible(fn () => $this->record->id !== auth()->id())
                 // chat_messages/private_chat_messages/forum_posts/forum_threads
                 // usan restrictOnDelete() (migración 2027_01_01_000450) --
-                // sin este chequeo, el DELETE llegaría hasta la BD y el
-                // usuario vería la excepción SQL cruda en vez de un mensaje
-                // entendible.
+                // el chequeo previo evita el intento; el catch de using()
+                // cubre la carrera (contenido creado entre el chequeo y el
+                // DELETE) en vez de dejar la excepción SQL sin manejar.
                 ->before(function (DeleteAction $action): void {
                     if (app(UserHasCommunityContentAction::class)->execute($this->record)) {
                         Notification::make()
                             ->warning()
-                            ->title('Este usuario tiene mensajes; desactívalo en vez de borrarlo.')
+                            ->title(self::CANNOT_DELETE_MESSAGE)
                             ->send();
 
                         $action->halt();
                     }
-                }),
+                })
+                ->using(function (User $record): bool {
+                    try {
+                        return (bool) $record->delete();
+                    } catch (QueryException $e) {
+                        if (! in_array($e->getCode(), ['23000', 23000], true)) {
+                            throw $e;
+                        }
+
+                        return false;
+                    }
+                })
+                ->failureNotificationTitle(self::CANNOT_DELETE_MESSAGE),
         ];
     }
 
