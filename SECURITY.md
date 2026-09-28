@@ -153,7 +153,8 @@ Nada de esta sección tiene commit en el rango de la sección 1.
   - `APP_URL` con `https`, `SESSION_SECURE_COOKIE=true`.
   - Usuario MySQL dedicado con contraseña.
   - `SEED_SUPER_ADMIN_PASSWORD` fuerte y rotada tras el primer ingreso.
-    *Observado en el código:* `database/seeders/DatabaseSeeder.php` cae por
-    defecto en `changeme123` si la variable no está definida — sin la variable,
-    el super admin se crea con esa contraseña.
+    `DatabaseSeeder` ya no tiene valor por defecto: si la variable no está
+    definida (o está vacía) lanza "Define SEED_SUPER_ADMIN_PASSWORD antes de
+    correr este seeder" antes de sembrar nada (antes caía en `changeme123`).
+    Sigue pendiente definir un valor fuerte en el `.env` de producción.
   - Permisos 755 en `storage/` y 600–640 en `.env`.
