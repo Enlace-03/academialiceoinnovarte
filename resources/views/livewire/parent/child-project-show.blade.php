@@ -145,6 +145,12 @@
                                         @endif
                                     </div>
                                 </a>
+                                {{-- Fuera del <a> de la tarjeta: un enlace dentro de otro enlace es HTML inválido. --}}
+                                @if ($evidenceStatus['status'] === 'evaluada' && ! empty($evidenceStatus['feedback_attachment']))
+                                    <div class="px-3">
+                                        <x-evaluation-feedback-document :attachment="$evidenceStatus['feedback_attachment']" />
+                                    </div>
+                                @endif
                             @endforeach
                         </div>
                     </div>

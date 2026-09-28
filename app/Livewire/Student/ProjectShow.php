@@ -85,6 +85,7 @@ class ProjectShow extends Component
             'status' => 'evaluada',
             'level' => $evaluation->consolidatedLevel(),
             'feedback' => $evaluation->feedback,
+            'feedback_attachment' => $evaluation->attachment,
         ];
     }
 
