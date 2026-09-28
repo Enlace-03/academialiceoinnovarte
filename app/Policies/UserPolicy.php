@@ -18,7 +18,7 @@ class UserPolicy
 
     public function view(User $user, User $target): bool
     {
-        return $user->can('users.view');
+        return $user->can('users.view') && $user->canManageUser($target);
     }
 
     /**
