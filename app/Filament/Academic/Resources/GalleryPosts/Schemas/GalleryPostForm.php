@@ -50,6 +50,10 @@ class GalleryPostForm
                     FileUpload::make('file_path')
                         ->label('Foto')
                         ->image()
+                        // Reemplaza el 'image/*' de image(), que deja pasar
+                        // SVG (puede llevar scripts). Mismos formatos que la
+                        // regla 'image' de Laravel en el lado Livewire.
+                        ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
                         ->disk('local')
                         ->directory('gallery-photos')
                         ->storeFileNamesIn('original_filename')

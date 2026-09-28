@@ -128,6 +128,9 @@ class ExpectedEvidencesRelationManager extends RelationManager
                         FileUpload::make('file_path')
                             ->label('Foto')
                             ->image()
+                            // Reemplaza el 'image/*' de image(), que deja
+                            // pasar SVG (puede llevar scripts).
+                            ->acceptedFileTypes(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
                             ->maxSize(8192)
                             ->disk('local')
                             ->directory('submissions')
