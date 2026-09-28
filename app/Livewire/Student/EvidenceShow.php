@@ -171,7 +171,7 @@ class EvidenceShow extends Component
 
     public function addLink(): void
     {
-        $this->validate(['linkInput' => 'required|url|max:2000'], [], ['linkInput' => 'enlace']);
+        $this->validate(['linkInput' => 'required|url:http,https|max:2000'], [], ['linkInput' => 'enlace']);
 
         $detection = YoutubeUrlDetector::detect($this->linkInput);
 
@@ -213,7 +213,7 @@ class EvidenceShow extends Component
             'newPhotos' => 'array',
             'newPhotos.*' => 'image|max:'.self::MAX_PHOTO_KB,
             'newLinks' => 'array',
-            'newLinks.*.url' => 'url|max:2000',
+            'newLinks.*.url' => 'url:http,https|max:2000',
         ]);
 
         $attachments = [];

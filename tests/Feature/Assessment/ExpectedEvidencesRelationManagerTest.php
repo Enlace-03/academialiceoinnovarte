@@ -77,4 +77,39 @@ class ExpectedEvidencesRelationManagerTest extends TestCase
         $this->assertSame('Buen trabajo.', $evaluation->feedback);
         $this->assertTrue($evaluation->consolidatedLevel()->is($level));
     }
+
+    /**
+     * Mismo esquema restringido que EvidenceShow del estudiante (ver
+     * EvidenceShowLinkValidationTest) -- el TextInput('url') de este
+     * RelationManager guarda enlaces por el mismo camino y se renderiza con
+     * el mismo <x-youtube-embed>, así que necesita la misma frontera.
+     */
+    public function test_registering_a_submission_rejects_a_non_http_link_scheme(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(RoleLevelSeeder::class);
+
+        $teacher = User::factory()->create()->assignRole('teacher');
+        $student = User::factory()->create()->assignRole('student');
+        $this->actingAs($teacher);
+        Filament::setCurrentPanel(Filament::getPanel('academic'));
+
+        $project = Project::factory()->create(['created_by_user_id' => $teacher->id]);
+        $phase = $project->phases()->first();
+        $evidence = ExpectedEvidence::factory()->for($phase)->create();
+
+        Livewire::test(ExpectedEvidencesRelationManager::class, [
+            'ownerRecord' => $project,
+            'pageClass' => EditProject::class,
+        ])
+            ->mountTableAction('registerSubmission', $evidence)
+            ->setTableActionData([
+                'student_id' => $student->id,
+                'attachments' => [['type' => 'link', 'url' => 'javascript://x%0Aalert(1)']],
+            ])
+            ->callMountedTableAction()
+            ->assertHasTableActionErrors(['attachments.0.url']);
+
+        $this->assertSame(0, Submission::where('expected_evidence_id', $evidence->id)->count());
+    }
 }

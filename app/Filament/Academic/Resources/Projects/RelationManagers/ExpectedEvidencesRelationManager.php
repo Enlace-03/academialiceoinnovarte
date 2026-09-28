@@ -140,6 +140,7 @@ class ExpectedEvidencesRelationManager extends RelationManager
                         TextInput::make('url')
                             ->label('URL')
                             ->url()
+                            ->rule('url:http,https')
                             ->visible(fn (Get $get): bool => $get('type') === 'link'),
                     ])
                     ->addActionLabel('Agregar adjunto')
