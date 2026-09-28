@@ -16,7 +16,7 @@ class EditUser extends EditRecord
 {
     protected static string $resource = UserResource::class;
 
-    private const CANNOT_DELETE_MESSAGE = 'No se puede eliminar: este usuario tiene mensajes o publicaciones. Desactívalo en su lugar.';
+    private const CANNOT_DELETE_MESSAGE = 'No se puede eliminar: este usuario tiene contenido asociado: mensajes, publicaciones o boletines. Desactívalo en su lugar.';
 
     /**
      * Mismo mecanismo y misma razón que CreateUser::authorizeResourceAccess()

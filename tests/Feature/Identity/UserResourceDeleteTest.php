@@ -4,6 +4,7 @@ namespace Tests\Feature\Identity;
 
 use App\Filament\Admin\Resources\Users\Pages\EditUser;
 use App\Models\User;
+use App\Modules\Assessment\Models\ReportCard;
 use App\Modules\Community\Actions\UserHasCommunityContentAction;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Community\Models\ForumPost;
@@ -16,6 +17,7 @@ use Database\Seeders\RolePermissionSeeder;
 use Filament\Actions\DeleteAction;
 use Filament\Facades\Filament;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 use Tests\TestCase;
 
@@ -64,7 +66,7 @@ class UserResourceDeleteTest extends TestCase
 
         Livewire::test(EditUser::class, ['record' => $student->getRouteKey()])
             ->callAction(DeleteAction::class)
-            ->assertNotified('No se puede eliminar: este usuario tiene mensajes o publicaciones. Desactívalo en su lugar.');
+            ->assertNotified('No se puede eliminar: este usuario tiene contenido asociado: mensajes, publicaciones o boletines. Desactívalo en su lugar.');
 
         $this->assertModelExists($student);
     }
@@ -87,9 +89,29 @@ class UserResourceDeleteTest extends TestCase
 
         Livewire::test(EditUser::class, ['record' => $student->getRouteKey()])
             ->callAction(DeleteAction::class)
-            ->assertNotified('No se puede eliminar: este usuario tiene mensajes o publicaciones. Desactívalo en su lugar.');
+            ->assertNotified('No se puede eliminar: este usuario tiene contenido asociado: mensajes, publicaciones o boletines. Desactívalo en su lugar.');
 
         $this->assertModelExists($student);
+    }
+
+    /**
+     * report_cards.student_id usa restrictOnDelete(), pero el chequeo previo
+     * (UserHasCommunityContentAction) no mira boletines: este caso llega hasta
+     * la FK y lo captura el catch de using(), con el mismo mensaje.
+     */
+    public function test_a_student_with_a_report_card_cannot_be_deleted_and_gets_the_friendly_message(): void
+    {
+        Storage::fake('local');
+
+        $student = User::factory()->create()->assignRole('student');
+        ReportCard::factory()->create(['student_id' => $student->id]);
+
+        Livewire::test(EditUser::class, ['record' => $student->getRouteKey()])
+            ->callAction(DeleteAction::class)
+            ->assertNotified('No se puede eliminar: este usuario tiene contenido asociado: mensajes, publicaciones o boletines. Desactívalo en su lugar.');
+
+        $this->assertModelExists($student);
+        $this->assertSame(1, ReportCard::count());
     }
 
     public function test_a_user_with_a_forum_post_cannot_be_deleted(): void
