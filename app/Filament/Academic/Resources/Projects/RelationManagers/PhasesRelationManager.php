@@ -108,7 +108,9 @@ class PhasesRelationManager extends RelationManager
 
                     TextInput::make('url_or_path')
                         ->label('URL o ruta')
-                        ->required(),
+                        ->required()
+                        ->url()
+                        ->rule('url:http,https'),
                 ])
                 ->collapsible()
                 ->columnSpanFull(),

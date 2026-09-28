@@ -70,4 +70,43 @@ class PhasesRelationManagerTest extends TestCase
             'is_required' => 1,
         ]);
     }
+
+    /**
+     * 'url_or_path' no tenía NINGUNA validación de esquema antes de este
+     * fix -- un enlace así se guarda tal cual y se renderiza en <a href>
+     * (project-show de estudiante y de padre), ejecutándose al hacer clic.
+     */
+    public function test_adding_a_resource_rejects_a_non_http_url_scheme(): void
+    {
+        $this->seed(RolePermissionSeeder::class);
+        $this->seed(RoleLevelSeeder::class);
+
+        $teacher = User::factory()->create()->assignRole('teacher');
+        $this->actingAs($teacher);
+        Filament::setCurrentPanel(Filament::getPanel('academic'));
+
+        $project = Project::factory()->create(['created_by_user_id' => $teacher->id]);
+        $phase = $project->phases()->orderBy('order')->first();
+
+        foreach (['javascript://x%0Aalert(1)', 'ftp://x.co'] as $scheme => $badUrl) {
+            Livewire::test(PhasesRelationManager::class, [
+                'ownerRecord' => $project,
+                'pageClass' => EditProject::class,
+            ])
+                ->mountTableAction('edit', $phase)
+                ->setTableActionData([
+                    'name' => $phase->name,
+                    'description' => $phase->description,
+                    'guides' => [],
+                    'resources' => [
+                        ['title' => 'Recurso malicioso', 'type' => 'enlace', 'url_or_path' => $badUrl],
+                    ],
+                    'expectedEvidences' => [],
+                ])
+                ->callMountedTableAction()
+                ->assertHasTableActionErrors(['resources.0.url_or_path']);
+        }
+
+        $this->assertDatabaseMissing('resources', ['phase_id' => $phase->id]);
+    }
 }

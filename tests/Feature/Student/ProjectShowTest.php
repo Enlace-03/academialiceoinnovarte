@@ -102,6 +102,29 @@ class ProjectShowTest extends TestCase
         $response->assertSee('Video introductorio');
     }
 
+    /**
+     * Defensa en profundidad: 'url_or_path' no tenía validación de esquema
+     * antes de este fix, así que puede existir un registro viejo con
+     * 'javascript:' -- la vista debe caer a texto plano en vez de un <a
+     * href> clicable, sin importar cómo haya entrado el dato a la BD.
+     */
+    public function test_a_resource_with_a_non_http_scheme_does_not_render_as_a_link(): void
+    {
+        $phase = $this->project->phases()->first();
+        Resource::factory()->create([
+            'phase_id' => $phase->id,
+            'guide_id' => null,
+            'title' => 'Recurso sospechoso',
+            'url_or_path' => 'javascript://x%0Aalert(1)',
+        ]);
+
+        $response = $this->actingAs($this->student)->get(route('student.projects.show', $this->project->uuid));
+
+        $response->assertOk();
+        $response->assertSee('Recurso sospechoso');
+        $response->assertDontSee('javascript://x%0Aalert(1)', false);
+    }
+
     public function test_evidence_status_is_pending_without_a_submission(): void
     {
         $phase = $this->project->phases()->first();

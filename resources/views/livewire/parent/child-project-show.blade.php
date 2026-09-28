@@ -65,9 +65,13 @@
                                     <ul class="mt-2 space-y-1">
                                         @foreach ($guide->resources as $resource)
                                             <li class="text-sm">
-                                                <a href="{{ $resource->url_or_path }}" target="_blank" class="text-emerald-700 hover:underline">
-                                                    {{ $resource->title }}
-                                                </a>
+                                                @if ($resource->hasHttpUrl())
+                                                    <a href="{{ $resource->url_or_path }}" target="_blank" rel="noopener noreferrer" class="text-emerald-700 hover:underline">
+                                                        {{ $resource->title }}
+                                                    </a>
+                                                @else
+                                                    <span>{{ $resource->title }}</span>
+                                                @endif
                                                 <span class="text-xs text-gray-400">({{ \App\Modules\Project\Models\Resource::TYPES[$resource->type] ?? $resource->type }})</span>
                                             </li>
                                         @endforeach
@@ -85,9 +89,13 @@
                         <ul class="mt-2 space-y-1">
                             @foreach ($phase->resources as $resource)
                                 <li class="text-sm">
-                                    <a href="{{ $resource->url_or_path }}" target="_blank" class="text-emerald-700 hover:underline">
-                                        {{ $resource->title }}
-                                    </a>
+                                    @if ($resource->hasHttpUrl())
+                                        <a href="{{ $resource->url_or_path }}" target="_blank" rel="noopener noreferrer" class="text-emerald-700 hover:underline">
+                                            {{ $resource->title }}
+                                        </a>
+                                    @else
+                                        <span>{{ $resource->title }}</span>
+                                    @endif
                                     <span class="text-xs text-gray-400">({{ \App\Modules\Project\Models\Resource::TYPES[$resource->type] ?? $resource->type }})</span>
                                 </li>
                             @endforeach
