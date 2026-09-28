@@ -35,6 +35,38 @@ TextColumn::make('rubricLevel.label')
 TextColumn::make('rubricLevel.order'),  // NO
 ```
 
+## Equivalencia con la escala numérica 1 a 5 (solo para el boletín)
+
+La escala numérica confirmada por Rafa es **1 a 5** (enteros). Los 4 niveles de la
+plataforma se convierten así (tabla confirmada por Diego):
+
+| Nivel de la plataforma | Equivalencia numérica | Desempeño |
+|---|---|---|
+| *(sin nivel — caso especial)* | 1 | Estudiante ausente o fuera del proceso |
+| Inicio | 2 | Bajo |
+| En proceso | 3 | Básico |
+| Logro esperado | 4 | Alto |
+| Logro destacado | 5 | Superior |
+
+El **1 no corresponde a ningún nivel de la rúbrica**: se reserva para un estudiante
+ausente o fuera del proceso evaluativo. Ningún `RubricLevel` se convierte en 1.
+La conversión vive en `App\Modules\Assessment\Support\ReportCardScale` (método
+puro, sin acceso a BD).
+
+- **Solo se usa dentro del documento oficial del boletín** (parcial/final/retiro,
+  ver `TODO.md` #30). Nunca en el portal, ni en `/academia`, ni en ninguna pantalla
+  de uso diario: la regla de oro de arriba sigue vigente para toda la UI.
+- **Es una conversión de salida:** en la base de datos el nivel sigue siendo la FK
+  a `rubric_levels`. No se guarda ningún número, y `rubric_levels.order` (1 a 4) no
+  es esta escala ni debe usarse como si lo fuera.
+- **Cómo se decide que alguien es un 1:** hoy el sistema no tiene ningún estado que
+  represente "ausente / fuera del proceso": `Submission.status` solo admite
+  `submitted | evaluated | returned`, y `Evaluation` no tiene status. Una entrega
+  que no existe se ve como "pendiente". La conversión solo expone la constante;
+  quién decide el 1 y con qué dato se define en el hito de Boletines.
+- Se asume que la escala es entera (1, 2, 3, 4, 5) y no una nota decimal (1.0 a
+  5.0). Si resulta ser decimal, esta tabla hay que rehacerla.
+
 ## Flujo de evaluación (EvaluateSubmissionAction)
 
 Una entrega puede tener **más de una evaluación** (una por `evaluator_type`: hoy solo
