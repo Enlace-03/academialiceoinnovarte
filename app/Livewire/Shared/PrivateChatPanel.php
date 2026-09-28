@@ -12,6 +12,8 @@ use App\Modules\Community\Models\PrivateChatThread;
 use App\Modules\Project\Models\Project;
 use App\Modules\Project\Models\ProjectTeam;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
 
@@ -31,6 +33,8 @@ use Livewire\Component;
  */
 class PrivateChatPanel extends Component
 {
+    private const MAX_SENDS_PER_MINUTE = 15;
+
     public Project $project;
 
     public string $type;
@@ -59,6 +63,16 @@ class PrivateChatPanel extends Component
         $this->authorize('create', [PrivateChatThread::class, $this->project, $this->type, $this->student, $this->team]);
 
         $this->validate();
+
+        $throttleKey = 'private-chat-send:'.auth()->id();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_SENDS_PER_MINUTE)) {
+            throw ValidationException::withMessages([
+                'content' => 'Estás enviando mensajes muy rápido. Espera un momento e inténtalo de nuevo.',
+            ]);
+        }
+
+        RateLimiter::hit($throttleKey, 60);
 
         app(SendPrivateChatMessageAction::class)->execute(
             $this->project, $this->type, $this->student, $this->team, auth()->user(), $this->content,

@@ -68,6 +68,26 @@ class PrivateChatPanelTest extends TestCase
         $this->assertSame(3, PrivateChatMessage::count());
     }
 
+    public function test_sending_more_than_the_per_minute_limit_is_rejected(): void
+    {
+        $teacher = User::factory()->create()->assignRole('teacher');
+        $student = User::factory()->create()->assignRole('student');
+        $project = Project::factory()->create(['created_by_user_id' => $teacher->id]);
+
+        $component = Livewire::actingAs($student)
+            ->test(PrivateChatPanel::class, ['project' => $project, 'type' => 'individual', 'student' => $student]);
+
+        for ($i = 1; $i <= 15; $i++) {
+            $component->set('content', "Mensaje {$i}")->call('send');
+        }
+
+        $this->assertSame(15, PrivateChatMessage::count());
+
+        $component->set('content', 'Mensaje 16')->call('send')->assertHasErrors('content');
+
+        $this->assertSame(15, PrivateChatMessage::count());
+    }
+
     public function test_student_cannot_send_in_another_students_individual_thread(): void
     {
         $teacher = User::factory()->create()->assignRole('teacher');

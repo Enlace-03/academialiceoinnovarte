@@ -8,6 +8,8 @@ use App\Modules\Community\Actions\SendChatMessageAction;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Institution\Models\Group;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -39,6 +41,8 @@ use Livewire\Component;
 #[Layout('layouts.portal')]
 class GroupChat extends Component
 {
+    private const MAX_SENDS_PER_MINUTE = 15;
+
     public ?Group $group = null;
 
     #[Validate('required|string|max:2000')]
@@ -81,6 +85,16 @@ class GroupChat extends Component
         $this->authorize('create', [ChatMessage::class, $this->group]);
 
         $this->validate();
+
+        $throttleKey = 'group-chat-send:'.auth()->id();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_SENDS_PER_MINUTE)) {
+            throw ValidationException::withMessages([
+                'content' => 'Estás enviando mensajes muy rápido. Espera un momento e inténtalo de nuevo.',
+            ]);
+        }
+
+        RateLimiter::hit($throttleKey, 60);
 
         app(SendChatMessageAction::class)->execute($this->group, auth()->user(), $this->content);
 

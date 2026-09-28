@@ -10,6 +10,8 @@ use App\Modules\Community\Models\ForumPost;
 use App\Modules\Community\Models\ForumThread;
 use App\Modules\Project\Models\Project;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Validate;
 use Livewire\Component;
@@ -41,6 +43,13 @@ class ForumThreadShow extends Component
      * cambio, vive del lado del Action).
      */
     private const MAX_PHOTO_KB = 8192;
+
+    /**
+     * Un solo cupo compartido entre createPost() y submitReply(): las dos
+     * terminan en CreateForumPostAction, así que limitarlas por separado
+     * dejaría publicar 10 + 10 = 20 por minuto alternando entre ambas.
+     */
+    private const MAX_POSTS_PER_MINUTE = 10;
 
     public Project $project;
 
@@ -92,6 +101,8 @@ class ForumThreadShow extends Component
             'newPostPhotos.*' => 'image|max:'.self::MAX_PHOTO_KB,
         ]);
 
+        $this->throttlePosting('newPostContent');
+
         app(CreateForumPostAction::class)->execute($this->thread, auth()->user(), [
             'content' => $this->newPostContent,
             'photos' => $this->newPostPhotos,
@@ -119,12 +130,27 @@ class ForumThreadShow extends Component
 
         $this->validateOnly('replyContent');
 
+        $this->throttlePosting('replyContent');
+
         app(CreateForumPostAction::class)->execute($this->thread, auth()->user(), [
             'content' => $this->replyContent,
             'parent_post_id' => $this->replyingToPostId,
         ]);
 
         $this->cancelReply();
+    }
+
+    private function throttlePosting(string $errorField): void
+    {
+        $throttleKey = 'forum-post:'.auth()->id();
+
+        if (RateLimiter::tooManyAttempts($throttleKey, self::MAX_POSTS_PER_MINUTE)) {
+            throw ValidationException::withMessages([
+                $errorField => 'Estás publicando muy rápido. Espera un momento e inténtalo de nuevo.',
+            ]);
+        }
+
+        RateLimiter::hit($throttleKey, 60);
     }
 
     public function toggleLike(int $postId): void

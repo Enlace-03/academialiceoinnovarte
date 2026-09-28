@@ -89,6 +89,26 @@ class GroupChatTest extends TestCase
         $this->assertDatabaseMissing('chat_messages', ['content' => 'Intento sin grupo']);
     }
 
+    public function test_sending_more_than_the_per_minute_limit_is_rejected(): void
+    {
+        $group = Group::factory()->create();
+        $student = User::factory()->create(['group_id' => $group->id])->assignRole('student');
+
+        $this->actingAs($student);
+
+        $component = Livewire::test(GroupChat::class);
+
+        for ($i = 1; $i <= 15; $i++) {
+            $component->set('content', "Mensaje {$i}")->call('send');
+        }
+
+        $this->assertSame(15, ChatMessage::where('group_id', $group->id)->count());
+
+        $component->set('content', 'Mensaje 16')->call('send')->assertHasErrors('content');
+
+        $this->assertSame(15, ChatMessage::where('group_id', $group->id)->count());
+    }
+
     /**
      * Defensa en profundidad: el middleware role:student bloquea ANTES de
      * llegar a ChatMessagePolicy -- notable aquí en particular porque

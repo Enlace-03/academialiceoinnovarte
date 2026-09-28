@@ -134,6 +134,37 @@ class StudentForumFlowTest extends TestCase
         $this->assertDatabaseMissing('forum_posts', ['content' => 'Intento cruzado']);
     }
 
+    /**
+     * Un solo cupo compartido entre createPost() y submitReply() (ambas
+     * terminan en CreateForumPostAction) -- 5 posts + 5 respuestas agotan el
+     * límite igual que 10 posts o 10 respuestas.
+     */
+    public function test_forum_posting_more_than_the_per_minute_limit_is_rejected(): void
+    {
+        $thread = ForumThread::factory()->create(['project_id' => $this->project->id]);
+        $rootPost = ForumPost::factory()->create(['forum_thread_id' => $thread->id]);
+
+        $this->actingAs($this->student);
+
+        $component = Livewire::test(ForumThreadShow::class, ['project' => $this->project, 'thread' => $thread]);
+
+        for ($i = 1; $i <= 5; $i++) {
+            $component->set('newPostContent', "Post {$i}")->call('createPost');
+        }
+
+        for ($i = 1; $i <= 5; $i++) {
+            $component->set('replyingToPostId', $rootPost->id)
+                ->set('replyContent', "Reply {$i}")
+                ->call('submitReply');
+        }
+
+        $this->assertSame(11, ForumPost::where('forum_thread_id', $thread->id)->count());
+
+        $component->set('newPostContent', 'Post 6')->call('createPost')->assertHasErrors('newPostContent');
+
+        $this->assertSame(11, ForumPost::where('forum_thread_id', $thread->id)->count());
+    }
+
     public function test_cross_cycle_student_cannot_view_thread_via_direct_url(): void
     {
         $thread = ForumThread::factory()->create(['project_id' => $this->project->id]);
