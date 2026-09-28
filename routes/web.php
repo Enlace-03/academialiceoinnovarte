@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\SandboxPrivateFileResponse;
 use App\Livewire\Parent\ChildEvidenceShow;
 use App\Livewire\Parent\ChildFieldProjects;
 use App\Livewire\Parent\ChildProjectShow;
@@ -117,13 +118,13 @@ Route::get('/galeria/fotos/{photo:uuid}', function (GalleryPhoto $photo) {
     Gate::authorize('view', $photo->post);
 
     return Storage::disk($photo->file_disk)->response($photo->file_path);
-})->middleware(['auth', 'expire-delivered-session'])->name('gallery.photos.show');
+})->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('gallery.photos.show');
 
 Route::get('/foro/fotos/{photo:uuid}', function (ForumPostPhoto $photo) {
     Gate::authorize('view', $photo->post);
 
     return Storage::disk($photo->file_disk)->response($photo->file_path);
-})->middleware(['auth', 'expire-delivered-session'])->name('forum.photos.show');
+})->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('forum.photos.show');
 
 /**
  * Adjuntos de entrega (Hito 3b-3), mismo criterio que gallery.photos.show /
@@ -138,7 +139,7 @@ Route::get('/entregas/adjuntos/{attachment:uuid}', function (SubmissionAttachmen
     Gate::authorize('view', $attachment->submission);
 
     return Storage::disk($attachment->file_disk)->response($attachment->file_path);
-})->middleware(['auth', 'expire-delivered-session'])->name('submissions.attachments.show');
+})->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('submissions.attachments.show');
 
 /**
  * Foto de perfil de estudiante -- mismo criterio de disco privado que las
@@ -152,7 +153,7 @@ Route::get('/estudiantes/{student:uuid}/foto', function (User $student) {
     abort_unless($student->hasPhoto(), 404);
 
     return Storage::disk($student->photo_disk)->response($student->photo_path);
-})->middleware(['auth', 'expire-delivered-session'])->name('students.photo.show');
+})->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('students.photo.show');
 
 /**
  * Portal de estudiante (Hito 3b-1). role:student, no parent — el padre se
