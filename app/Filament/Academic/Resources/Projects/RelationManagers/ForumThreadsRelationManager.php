@@ -51,6 +51,7 @@ class ForumThreadsRelationManager extends RelationManager
             TextInput::make('title')
                 ->label('Título')
                 ->required()
+                ->maxLength(255)
                 ->columnSpanFull(),
 
             Select::make('phase_id')

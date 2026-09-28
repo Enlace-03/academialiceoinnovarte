@@ -75,6 +75,24 @@ class ForumThreadsRelationManagerTest extends TestCase
         $this->assertSame($teacher->id, $thread->fresh()->hidden_by_user_id);
     }
 
+    public function test_creating_a_thread_rejects_a_title_over_the_column_limit(): void
+    {
+        $teacher = User::factory()->create()->assignRole('teacher');
+        $this->actingAs($teacher);
+        $project = Project::factory()->create(['created_by_user_id' => $teacher->id]);
+
+        Livewire::test(ForumThreadsRelationManager::class, [
+            'ownerRecord' => $project,
+            'pageClass' => EditProject::class,
+        ])
+            ->mountTableAction('create')
+            ->setTableActionData(['title' => str_repeat('a', 256), 'phase_id' => null])
+            ->callMountedTableAction()
+            ->assertHasTableActionErrors(['title']);
+
+        $this->assertDatabaseMissing('forum_threads', ['project_id' => $project->id]);
+    }
+
     public function test_teacher_cannot_hide_a_thread_in_another_teachers_project(): void
     {
         $teacher = User::factory()->create()->assignRole('teacher');
