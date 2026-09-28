@@ -68,6 +68,7 @@ return [
             'dashboard.institutional.view' => 'Ver dashboard institucional',
             'students-at-risk.view.all'    => 'Ver estudiantes en riesgo de toda la institución',
             'reports.export'               => 'Exportar reportes',
+            'report_cards.view'            => 'Ver y descargar boletines de estudiantes (PDF)',
             'tracking.settings.manage'     => 'Configurar los pesos de la fórmula de avance por ciclo',
         ],
 
@@ -127,6 +128,7 @@ return [
             'rubrics.manage', 'submissions.evaluate',
             'observations.write.own', 'observations.write.all', 'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all', 'reports.export',
+            'report_cards.view',
             'tracking.settings.manage',
             'avatar-messages.manage',
             'chat.moderate',
@@ -147,6 +149,7 @@ return [
             'rubrics.manage',
             'observations.view.all',
             'dashboard.institutional.view', 'students-at-risk.view.all',
+            'report_cards.view',
             // Mismo alcance que rector ya tiene sobre esta pantalla (Hito de
             // permisos, corrección #1) -- coordinator gestiona seguimiento
             // institucional tanto como rector, no hay razón de negocio para
@@ -174,6 +177,9 @@ return [
             'phases.manage', 'resources.manage',
             'rubrics.manage', 'submissions.evaluate', 'observations.write.own',
             'gallery.publish', 'gallery.update.own',
+            // "Cualquier docente" por falta de teacher_assignments real (ver
+            // ReportCardPolicy); secretary NO lo tiene a propósito.
+            'report_cards.view',
         ],
     ],
 
