@@ -74,6 +74,7 @@ moderación).
 | `a0ffb92` | Sin límite de frecuencia en chat ni foro. | `GroupChat::send` y `PrivateChatPanel::send`: máximo 15 por minuto por usuario. `ForumThreadShow::createPost` y `submitReply` comparten un solo cupo de 10 por minuto (ambas terminan en `CreateForumPostAction`; por separado permitirían 20/min alternando). Al excederlo, error de validación amigable en el campo. |
 | `f019966` | `chat_messages.user_id`, `private_chat_messages.user_id`, `forum_posts.user_id` y `forum_threads.created_by` usaban `cascadeOnDelete()`: borrar un usuario borraba historial institucional que otros ya leyeron. | Pasan a `restrictOnDelete()`. `EditUser` captura el caso ANTES de la BD y pide desactivar al usuario en vez de borrarlo. Verificado antes de migrar: cero dependencias del cascade en la suite. |
 | `5f677ec` | Complemento de `f019966`: la FK restrictiva podía dispararse igual (carrera entre el chequeo previo y el DELETE) y dejar una excepción sin manejar. | Mensaje exacto "No se puede eliminar: este usuario tiene mensajes o publicaciones. Desactívalo en su lugar."; `using()` captura `QueryException` SQLSTATE 23000 y devuelve `false` para que salga la notificación de fallo. |
+| `22b6c70` | Ampliación posterior del mensaje de `5f677ec` (commit fuera del rango original). | El mensaje se amplió para cubrir también boletines ("…tiene contenido asociado: mensajes, publicaciones o boletines. Desactívalo en su lugar."), porque `report_cards.student_id` también usa `restrictOnDelete()`. La descripción de `5f677ec` de arriba se conserva tal cual. |
 
 ### Adjuntos de evaluación (documento de retroalimentación del docente)
 
@@ -82,6 +83,25 @@ moderación).
 | `2e3593e` | El docente solo podía devolver texto; el archivo debía quedar como devolución del docente y nunca mezclado con la evidencia del estudiante. | Tabla `evaluation_attachments` y modelo `EvaluationAttachment`, ligados a la `Evaluation` (no a la `Submission`); un adjunto por evaluación (`unique(evaluation_id)`); el hook `deleting` borra el archivo. Un archivo nuevo reemplaza al anterior (el viejo se borra del disco tras confirmar la transacción); sin archivo, se conserva. `stored_path` se restringe a `evaluation-feedback/` para que el cliente no pueda apuntar el adjunto a un archivo privado ajeno. |
 | `0f6f66a` | Autorización del archivo de retroalimentación. | Ruta `evaluations.attachments.show` (UUID, disco `local`, descarga con `Content-Disposition: attachment`, CSP sandbox) autorizada por `EvaluationAttachmentPolicy::view()`: estudiante dueño, sus acudientes, el docente que evaluó y quien tenga `observations.view.all`. Deliberadamente más angosta que `SubmissionPolicy::view()`: un docente distinto con acceso al proyecto vía `viewAsStaff` no puede verlo. Nombre de descarga saneado con `SafeDownloadName`, compartido con `submissions.attachments.show`. |
 | `f93f29e` | Mostrar el documento en las vistas de proyecto. | `project-show` y `child-project-show` muestran el documento junto al comentario de texto, fuera del `<a>` de la tarjeta (un enlace dentro de otro es HTML inválido). Sin cambios de autorización. |
+
+### Boletines en PDF (commits posteriores al rango inicial)
+
+Bloque completo de boletines: permiso, Policy, ruta, Job/Action y la marca de
+regla provisional. Solo produce el documento; no modela comisiones de evaluación
+ni aprobación (siguen siendo un proceso manual y presencial).
+
+| Commit | Tema | Qué hace |
+|---|---|---|
+| `03f6dbe` | Permiso y Policy | Permiso `report_cards.view` (mismo grupo que `reports.export`), asignado en los presets de rector, coordinator y teacher; **no** a secretary. `ReportCardPolicy::view(User $user, User $student)` autoriza contra el estudiante: acudiente del estudiante o staff con el permiso; cualquier otro caso no, incluido el propio estudiante y un acudiente de otro estudiante. Para el docente es "cualquier docente" por falta de `teacher_assignments` real (documentado en el docblock, igual que `ChatMessagePolicy`). |
+| `33ee0e3` | Ruta | `report-cards.show` (`/boletines/{uuid}`): UUID en la URL, disco `local`, `Gate::authorize('view', [ReportCard::class, $student])`, descarga con `Content-Disposition: attachment`, nombre saneado con `SafeDownloadName` y CSP sandbox de `SandboxPrivateFileResponse`. |
+| `64c8ace` | Job y Action | `GenerateReportCardJob` (cola `database`, un solo intento) delega en `GenerateReportCardAction`. Usa solo evaluaciones del docente del año lectivo vigente, convierte con `ReportCardScale` y renderiza un PDF de tablas simples, sin recursos remotos, en el disco `local`. `type='total'` falla si ya existe uno para estudiante + grado + año, salvo `regenerate` (reemplaza y borra el archivo viejo); `parcial` siempre genera uno nuevo. Nunca se inventa el 1 (ausente): aún no hay un dato que lo decida. |
+| `89ee4c0` | Regla provisional | Marca como PROVISIONAL, en el docblock de la Action y de `dominant()` y con una remisión en `ReportCardScale`, la regla de agregación del boletín. |
+
+**Pendiente de confirmación pedagógica de Rafa:** la regla de **moda + desempate
+al nivel más bajo** con la que se consolida el nivel por campo de pensamiento y
+por proyecto viene de `Evaluation::consolidatedLevel()` y de `TODO.md` #30, pero
+no está confirmada como la regla definitiva del boletín oficial. No la tomes como
+definitiva.
 
 ### Otros commits del rango (no son correcciones de seguridad)
 
