@@ -16,6 +16,7 @@ use App\Livewire\Student\MyProjects;
 use App\Livewire\Student\ProjectShow;
 use App\Models\User;
 use App\Modules\Assessment\Models\EvaluationAttachment;
+use App\Modules\Assessment\Models\ReportCard;
 use App\Modules\Assessment\Models\SubmissionAttachment;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Community\Models\ForumPostPhoto;
@@ -170,6 +171,20 @@ Route::get('/evaluaciones/adjuntos/{attachment:uuid}', function (EvaluationAttac
     return Storage::disk($attachment->file_disk)
         ->download($attachment->file_path, SafeDownloadName::for($attachment->original_filename));
 })->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('evaluations.attachments.show');
+
+/**
+ * Boletín en PDF (ReportCard): UUID en la URL, disco 'local', descarga
+ * siempre (Content-Disposition: attachment) y CSP sandbox. La autorización
+ * es ReportCardPolicy::view() contra el ESTUDIANTE del boletín (acudiente
+ * del estudiante o staff con report_cards.view; nunca el propio estudiante).
+ */
+Route::get('/boletines/{reportCard:uuid}', function (ReportCard $reportCard) {
+    Gate::authorize('view', [ReportCard::class, $reportCard->student]);
+
+    $filename = SafeDownloadName::for("boletin-{$reportCard->type}-{$reportCard->academic_year}.pdf", 'boletin.pdf');
+
+    return Storage::disk($reportCard->file_disk)->download($reportCard->file_path, $filename);
+})->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('report-cards.show');
 
 /**
  * Foto de perfil de estudiante -- mismo criterio de disco privado que las
