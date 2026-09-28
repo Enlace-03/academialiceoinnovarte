@@ -50,6 +50,7 @@
                     @if ($evidenceState['feedback'])
                         <p class="text-sm text-gray-600 mt-2 italic">"{{ $evidenceState['feedback'] }}"</p>
                     @endif
+                    <x-evaluation-feedback-document :attachment="$evidenceState['feedback_attachment'] ?? null" />
                 </div>
             @elseif ($evidenceState['status'] === 'devuelta')
                 <div class="mb-4">
@@ -59,6 +60,7 @@
                     @if ($evidenceState['feedback'])
                         <p class="text-sm text-gray-600 mt-2 italic">"{{ $evidenceState['feedback'] }}"</p>
                     @endif
+                    <x-evaluation-feedback-document :attachment="$evidenceState['feedback_attachment'] ?? null" />
                 </div>
             @elseif ($evidenceState['status'] === 'entregada')
                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 mb-4">

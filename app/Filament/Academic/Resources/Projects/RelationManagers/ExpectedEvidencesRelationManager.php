@@ -257,6 +257,19 @@ class ExpectedEvidencesRelationManager extends RelationManager
                                 ->label('Comentario general')
                                 ->rows(2),
 
+                            Placeholder::make('currentFeedbackDocument')
+                                ->label('Documento de retroalimentación actual')
+                                ->content(function (Get $get): \Illuminate\Contracts\View\View {
+                                    $attachment = Submission::find($get('submission_id'))
+                                        ?->evaluations()->where('evaluator_type', 'teacher')->first()
+                                        ?->attachment;
+
+                                    return view('components.evaluation-feedback-document', [
+                                        'attachment' => $attachment && auth()->user()?->can('view', $attachment) ? $attachment : null,
+                                    ]);
+                                })
+                                ->columnSpanFull(),
+
                             // Opcional: el docente puede devolver solo texto, solo
                             // archivo o ambos. Si ya había un documento y no se sube
                             // otro, se conserva. Es la devolución del docente

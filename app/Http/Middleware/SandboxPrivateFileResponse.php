@@ -10,7 +10,8 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Rutas que sirven archivos subidos por usuarios desde el disco privado
- * (fotos de galería/foro, adjuntos de entrega, foto de perfil): si alguien
+ * (fotos de galería/foro, adjuntos de entrega, documentos de
+ * retroalimentación del docente, foto de perfil): si alguien
  * abre el archivo directo en el navegador, 'default-src none; sandbox'
  * impide que ejecute scripts o cargue nada, aunque el archivo fuera un SVG
  * o un HTML disfrazado. Defensa en profundidad sobre la validación de tipo

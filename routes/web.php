@@ -15,6 +15,7 @@ use App\Livewire\Student\MyCalendar;
 use App\Livewire\Student\MyProjects;
 use App\Livewire\Student\ProjectShow;
 use App\Models\User;
+use App\Modules\Assessment\Models\EvaluationAttachment;
 use App\Modules\Assessment\Models\SubmissionAttachment;
 use App\Modules\Community\Models\ChatMessage;
 use App\Modules\Community\Models\ForumPostPhoto;
@@ -22,6 +23,7 @@ use App\Modules\Community\Models\GalleryPhoto;
 use App\Modules\Identity\Actions\EndStudentSessionAction;
 use App\Modules\Identity\Actions\GrantStudentSessionAction;
 use App\Modules\Institution\Models\Group;
+use App\Modules\Shared\Support\SafeDownloadName;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
@@ -148,17 +150,26 @@ Route::get('/entregas/adjuntos/{attachment:uuid}', function (SubmissionAttachmen
     $disk = Storage::disk($attachment->file_disk);
 
     if ($attachment->type === 'document') {
-        // basename() descarta cualquier ruta (../, directorios) y los caracteres
-        // de control/separadores restantes se eliminan; Symfony lanza
-        // excepción (500) si el nombre trae "/" o "\".
-        $filename = basename(str_replace('\\', '/', (string) $attachment->original_filename));
-        $filename = trim(preg_replace('/[\x00-\x1F\x7F\/\\\\]+/', '', $filename) ?? '', ". \t");
-
-        return $disk->download($attachment->file_path, $filename !== '' ? $filename : 'documento');
+        return $disk->download($attachment->file_path, SafeDownloadName::for($attachment->original_filename));
     }
 
     return $disk->response($attachment->file_path);
 })->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('submissions.attachments.show');
+
+/**
+ * Documento de retroalimentación del docente (EvaluationAttachment), no
+ * evidencia del estudiante. Misma forma que la ruta de arriba (UUID, disco
+ * 'local', sandbox CSP) pero la autorización es EvaluationAttachmentPolicy::
+ * view() -- estudiante dueño, sus acudientes, el docente que evaluó y
+ * observations.view.all --, NO SubmissionPolicy::view(), que dejaría pasar a
+ * cualquier staff con acceso al proyecto. Siempre descarga (documentos).
+ */
+Route::get('/evaluaciones/adjuntos/{attachment:uuid}', function (EvaluationAttachment $attachment) {
+    Gate::authorize('view', $attachment);
+
+    return Storage::disk($attachment->file_disk)
+        ->download($attachment->file_path, SafeDownloadName::for($attachment->original_filename));
+})->middleware(['auth', 'expire-delivered-session', SandboxPrivateFileResponse::class])->name('evaluations.attachments.show');
 
 /**
  * Foto de perfil de estudiante -- mismo criterio de disco privado que las

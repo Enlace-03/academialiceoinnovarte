@@ -99,7 +99,9 @@ class ChildEvidenceShow extends Component
         }
 
         if ($submission->status === 'returned') {
-            return ['status' => 'devuelta', 'feedback' => $submission->evaluations->first()?->feedback];
+            $returnedEvaluation = $submission->evaluations->first();
+
+            return ['status' => 'devuelta', 'feedback' => $returnedEvaluation?->feedback, 'feedback_attachment' => $returnedEvaluation?->attachment];
         }
 
         $evaluation = $submission->evaluations->first();
@@ -112,6 +114,7 @@ class ChildEvidenceShow extends Component
             'status' => 'evaluada',
             'level' => $evaluation->consolidatedLevel(),
             'feedback' => $evaluation->feedback,
+            'feedback_attachment' => $evaluation->attachment,
         ];
     }
 
