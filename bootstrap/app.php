@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureUserIsActive;
 use App\Http\Middleware\ExpireDeliveredStudentSession;
 use App\Http\Middleware\SecurityHeaders;
 use Illuminate\Foundation\Application;
@@ -27,6 +28,10 @@ return Application::configure(basePath: dirname(__DIR__))
         // Global (no solo grupo 'web'): los paneles Filament arman su propio
         // stack de middleware. Ver el docblock de SecurityHeaders.
         $middleware->append(SecurityHeaders::class);
+
+        // Grupo 'web', no global: necesita la sesión (StartSession va en
+        // 'web'). Ver el docblock de EnsureUserIsActive.
+        $middleware->web(append: [EnsureUserIsActive::class]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(

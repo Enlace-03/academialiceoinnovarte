@@ -74,7 +74,11 @@ Route::post('/logout', function () {
 Route::get('/academia/grupos/{group}/entregar-sesion', function (Group $group) {
     Gate::authorize('create', [ChatMessage::class, $group]);
 
-    $students = User::role('student')->where('group_id', $group->id)->orderBy('name')->get(['id', 'name']);
+    $students = User::role('student')
+        ->where('group_id', $group->id)
+        ->where('is_active', true)
+        ->orderBy('name')
+        ->get(['id', 'name']);
 
     return view('academic.grant-session', ['group' => $group, 'students' => $students]);
 })->middleware('auth')->name('academic.group-sessions.create');
@@ -85,7 +89,7 @@ Route::post('/academia/grupos/{group}/entregar-sesion', function (Group $group) 
     $data = request()->validate(['student_id' => ['required', 'integer', 'exists:users,id']]);
     $student = User::findOrFail($data['student_id']);
 
-    abort_unless($student->hasRole('student') && $student->group_id === $group->id, 422);
+    abort_unless($student->hasRole('student') && $student->group_id === $group->id && $student->is_active, 422);
 
     app(GrantStudentSessionAction::class)->execute(
         auth()->user(), $student, $group, request()->ip(), request()->userAgent()

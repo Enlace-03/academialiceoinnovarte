@@ -66,6 +66,11 @@ class UserForm
                     Toggle::make('is_active')
                         ->label('Usuario activo')
                         ->default(true)
+                        // Nadie se autodesactiva por error: sobre el propio
+                        // registro el toggle queda bloqueado (y un campo
+                        // disabled no se deshidrata, así que tampoco viaja
+                        // en el guardado).
+                        ->disabled(fn (?User $record): bool => $record?->is($actingUser) ?? false)
                         ->inline(false),
                 ]),
 

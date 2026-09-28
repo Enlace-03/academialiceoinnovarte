@@ -30,12 +30,22 @@ class User extends Authenticatable implements FilamentUser
 {
     use HasFactory, Notifiable, HasUuids, HasRoles, HasDelegationCeiling;
 
+    /**
+     * Mismo default que la columna (boolean default true): sin esto, un
+     * User recién creado en memoria sin is_active explícito lo tendría en
+     * null, y canAccessPanel()/EnsureUserIsActive lo tratarían como inactivo.
+     */
+    protected $attributes = [
+        'is_active' => true,
+    ];
+
     protected function casts(): array
     {
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'photo_upload_blocked' => 'boolean',
+            'is_active' => 'boolean',
         ];
     }
 
@@ -136,9 +146,19 @@ class User extends Authenticatable implements FilamentUser
      * "identity") are fail-closed out, since they now have their own real
      * login path at "/" (Hito 3b-0). Per-resource Policies still do the real
      * restriction within the panel for staff roles.
+     *
+     * Both panels also require is_active (fail-closed): an inactive account
+     * never gets in, whatever its roles or permissions. Filament's
+     * Authenticate middleware re-checks this on every panel request, so
+     * deactivating a user who is already inside cuts them off on their next
+     * page load.
      */
     public function canAccessPanel(Panel $panel): bool
     {
+        if (! $this->is_active) {
+            return false;
+        }
+
         return match ($panel->getId()) {
             'admin' => $this->isSuperAdmin()
                 || $this->hasAnyPermissionStartingWith(

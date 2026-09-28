@@ -75,6 +75,15 @@ class Login extends Component
 
         $user = User::where('email', $this->email)->firstOrFail();
 
+        // Cuenta desactivada desde /admin: la contraseña es correcta, pero no
+        // se inicia sesión. EnsureUserIsActive corta además cualquier sesión
+        // ya abierta (incluida la cookie "recordarme" de acudientes).
+        if (! $user->is_active) {
+            $this->errorMessage = 'Tu cuenta está desactivada. Comunícate con secretaría.';
+
+            return;
+        }
+
         Auth::guard('web')->setRememberDuration(self::REMEMBER_DURATION_IN_MINUTES);
 
         Auth::login($user, remember: $user->hasRole('parent'));
