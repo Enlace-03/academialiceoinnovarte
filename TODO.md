@@ -378,6 +378,14 @@ En ambos casos, la propia documentación de la regla ya lo advierte (`GroupRequi
 
 **Cuándo retomarlo:** filtro por proyecto es una mejora de UI menor cuando el volumen de proyectos simultáneos por estudiante lo justifique. Eventos institucionales requiere diseñar una entidad nueva primero (¿tabla `institutional_events`? ¿alcance por ciclo/grado o global? ¿quién la administra -- rector, cualquier docente?) -- no es una extensión trivial de lo que ya existe, es una pieza de dominio nueva.
 
+## 35. `trustProxies(at: ['127.0.0.1'])` en `bootstrap/app.php`: afinado para Cloudflare Quick Tunnel local, revisar en el primer deploy real
+
+**Estado:** implementado para el Hito de demo con Cloudflare Tunnel (túnel temporal para que Isa y Rafa probaran la plataforma sin deploy real) -- activo, no es código muerto, pero su valor concreto (`127.0.0.1`) responde a esa topología puntual, no a producción.
+
+**Contexto:** `cloudflared tunnel --url ...` corre en la misma máquina y reenvía a Apache por loopback en texto plano -- sin confiar en ese proxy, Laravel arma redirects/URLs absolutas con el Host/esquema de la conexión real (`http://academialiceoinnovarte.test`), no con el hostname público `https://*.trycloudflare.com`, rompiendo cualquier redirect (ej. tras el login) para quien esté fuera de esta máquina. Confiar solo en `127.0.0.1` (no `'*'`) evita que un cliente externo falsifique `X-Forwarded-*`.
+
+**Cuándo retomarlo:** en el primer deploy real a cPanel. La topología de proxy ahí puede ser distinta (otra IP de loopback, un proxy inverso real delante con IP propia, o directamente ningún proxy intermedio) -- confirmar contra cPanel real antes de asumir que `127.0.0.1` sigue siendo el valor correcto, o que hace falta `trustProxies` en absoluto.
+
 ---
 
 ## Notas de infraestructura (resueltas)

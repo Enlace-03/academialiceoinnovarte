@@ -32,6 +32,26 @@ return Application::configure(basePath: dirname(__DIR__))
         // Grupo 'web', no global: necesita la sesión (StartSession va en
         // 'web'). Ver el docblock de EnsureUserIsActive.
         $middleware->web(append: [EnsureUserIsActive::class]);
+
+        // Confiar SOLO en 127.0.0.1 como proxy (Hito de demo con Cloudflare
+        // Quick Tunnel, temporal): cloudflared corre local y reenvia a
+        // Apache por loopback en texto plano -- sin esto, Laravel arma
+        // redirects/URLs absolutas (route(), url()) con el Host y esquema
+        // http de la conexion real (localhost), no con el hostname publico
+        // https del tunel, así que cualquier redirect (ej. tras el login)
+        // termina apuntando a http://academialiceoinnovarte.test, que no
+        // resuelve fuera de esta máquina. Confiando solo en 127.0.0.1 (no
+        // '*') esto no abre nada a que un cliente externo falsifique estas
+        // cabeceras -- cloudflared es el único que puede alcanzar Apache
+        // por esa IP. Inofensivo para el desarrollo local normal (sin
+        // túnel no hay X-Forwarded-* que leer, este bloque no cambia nada).
+        //
+        // El valor '127.0.0.1' está afinado específicamente para esta
+        // topología local (cloudflared -> Apache por loopback en la misma
+        // máquina) -- REVISAR en el primer deploy real a cPanel, donde el
+        // proxy real (si lo hay) puede tener otra IP, o el hosting puede no
+        // necesitar esto en absoluto. Ver TODO.md.
+        $middleware->trustProxies(at: ['127.0.0.1']);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->shouldRenderJsonWhen(
