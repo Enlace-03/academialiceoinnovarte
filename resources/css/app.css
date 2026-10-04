@@ -6,6 +6,27 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Marca InnovArTec (Figma "Plataforma Innovartec"): bienvenida y login. */
+    --font-body: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-fredoka), var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+    --color-innov-bg: #f7f0ff;
+    --color-innov-cream: #fffbf4;
+    --color-innov-ink: #2c2c2c;
+    --color-innov-purple: #8a1fdc;
+    --color-innov-purple-soft: #f2e5ff;
+    --color-innov-purple-border: #b988db;
+    --color-innov-lilac: #eeddff;
+    --color-innov-title: #9a57c6;
+    --color-innov-tagline: #ac60e7;
+    --color-innov-green: #84bf23;
+    --color-innov-green-soft: #dcf1a6;
+    --color-innov-orange: #fd9702;
+    --color-innov-orange-soft: #ffecc9;
+    --color-innov-yellow-soft: #fff2ca;
+    --color-innov-blue: #0291fc;
+    --color-innov-blue-soft: #d9f4ff;
 }
 
 @layer base {
@@ -25,4 +46,8 @@
     [role='button']:not(:disabled) {
         cursor: pointer;
     }
+}
+
+[x-cloak] {
+    display: none !important;
 }

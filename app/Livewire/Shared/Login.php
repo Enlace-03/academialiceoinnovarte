@@ -31,7 +31,7 @@ use Livewire\Component;
  * poder entrar por culpa de uno). Solo cuentan los fallos; un login exitoso
  * limpia el contador. El bloqueo aplica incluso con la contraseña correcta.
  */
-#[Layout('layouts.portal')]
+#[Layout('layouts.guest')]
 class Login extends Component
 {
     private const REMEMBER_DURATION_IN_MINUTES = 90 * 24 * 60;

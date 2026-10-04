@@ -12,6 +12,14 @@ export default defineConfig({
                 bunny('Instrument Sans', {
                     weights: [400, 500, 600],
                 }),
+                // Pantallas de bienvenida y login (diseño Figma "Plataforma Innovartec").
+                bunny('Nunito', {
+                    weights: [400, 500, 600, 700, 800],
+                    styles: ['normal', 'italic'],
+                }),
+                bunny('Fredoka', {
+                    weights: [400],
+                }),
             ],
         }),
         tailwindcss(),
