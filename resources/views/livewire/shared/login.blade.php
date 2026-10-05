@@ -19,26 +19,32 @@
         ['text' => 'Herramientas', 'text2' => 'que inspiran', 'icon' => 'icon-estrella.svg'],
     ];
 
-    // TODO: mismas URLs reales que en welcome.blade.php.
-    $socials = [
-        ['label' => 'Instagram', 'icon' => 'social-instagram.svg', 'url' => '#'],
-        ['label' => 'Facebook', 'icon' => 'social-facebook.svg', 'url' => '#'],
-        ['label' => 'TikTok', 'icon' => 'social-tiktok.svg', 'url' => '#'],
-        ['label' => 'Sitio web', 'icon' => 'social-web.svg', 'url' => '#'],
-    ];
+    $socials = array_filter(config('innovartec.socials'), fn (array $social) => filled($social['url']));
 
     $inputClass = 'h-[67px] w-full rounded-[5px] border border-innov-lilac bg-innov-bg pl-[56px] text-base text-innov-ink shadow-[inset_0_4px_4px_rgba(0,0,0,0.25)] focus:border-innov-purple focus:outline-none focus:ring-2 focus:ring-innov-purple/40';
 @endphp
 
-<div class="mx-auto grid min-h-screen w-full max-w-7xl items-center gap-10 px-6 py-8 sm:px-12 lg:grid-cols-[minmax(0,1fr)_447px] lg:px-16">
+{{--
+    En escritorio (lg+) el diseño se dibuja en un lienzo fijo de 1440×1024 (el
+    tamaño del frame de Figma) y se escala para que quepa entero en la
+    ventana, sin scroll. Por debajo de lg es la columna normal del móvil.
+--}}
+<div
+    x-data="{ scale: 1, width: null, wide: false, fit() { const w = window.innerWidth, h = window.innerHeight; if (w < 1024) { this.scale = 1; this.width = null; this.wide = false; return } this.scale = w >= 1900 ? Math.min(1.4, w / 1900, h / 1024) : Math.min(1, w / 1440, h / 1024); this.width = Math.min(1900, Math.max(1440, w / this.scale)); this.wide = this.width >= 1900 } }"
+    x-init="fit()"
+    x-on:resize.window="fit()"
+    class="lg:flex lg:h-dvh lg:items-center lg:justify-center lg:overflow-hidden"
+>
+<div x-bind:style="(scale !== 1 ? 'transform: scale(' + scale + ');' : '') + (width ? 'width: ' + width + 'px' : '')" class="mx-auto grid min-h-screen w-full max-w-[1900px] items-center gap-10 px-6 py-8 sm:px-12 lg:h-[1024px] lg:min-h-0 lg:w-[1440px] lg:shrink-0 lg:grid-cols-[minmax(0,1fr)_536px] lg:gap-12 lg:px-[8%]">
     {{-- Columna izquierda: marca y mensajes (solo escritorio) --}}
     <section class="hidden lg:block" aria-hidden="false">
-        <div class="relative h-[98px] w-full max-w-[585px] overflow-hidden">
-            <img src="{{ $img('logo-completo.png') }}" alt="InnovArTec" class="absolute left-0 top-[-465.2%] h-[577.46%] w-full max-w-none">
+        {{-- Recorte exacto de la palabra "InnovArTec" del PNG (x 88-1204, y 1000-1182 de 1278x1230): así su borde izquierdo queda alineado con el texto de abajo. --}}
+        <div class="relative aspect-[1116/182] w-full max-w-[780px] overflow-hidden">
+            <img src="{{ $img('logo-completo.png') }}" alt="InnovArTec" class="absolute left-[-7.89%] top-[-549.5%] h-[675.8%] w-[114.5%] max-w-none">
         </div>
-        <p class="mt-5 text-[32px] font-bold leading-tight text-innov-tagline">Tu espacio para aprender, crear y descubrir</p>
+        <p class="mt-2 text-[32px] font-bold leading-tight text-innov-tagline">Tu espacio para aprender, crear y descubrir</p>
 
-        <div class="relative mt-10">
+        <div class="relative mt-[72px]">
             <div class="max-w-[393px]">
                 <p class="text-2xl">Explora tus clases, actividades y recursos mientras desarrollas todo tu potencial creativo.</p>
 
@@ -54,7 +60,7 @@
                 </ul>
             </div>
 
-            <img src="{{ $img('mascotas.png') }}" alt="" class="pointer-events-none absolute left-[345px] top-[-8px] h-[444px] w-[507px] max-w-none rotate-[2.54deg] object-contain xl:left-[360px]">
+            <img x-show="wide" x-cloak src="{{ $img('mascotas.png') }}" alt="" class="pointer-events-none absolute left-[400px] top-[-70px] h-[580px] w-[663px] max-w-none rotate-[2.54deg] object-contain">
         </div>
 
         <div class="mt-10 flex w-[383px] items-center gap-2.5 rounded-[10px] bg-innov-purple-soft p-2.5">
@@ -74,8 +80,8 @@
         <ul class="mt-10 flex gap-1.5" aria-label="Redes del colegio">
             @foreach ($socials as $social)
                 <li>
-                    <a href="{{ $social['url'] }}" aria-label="{{ $social['label'] }}" target="_blank" rel="noopener noreferrer">
-                        <img src="{{ $img($social['icon']) }}" alt="" class="size-[38px]">
+                    <a href="{{ $social['url'] }}" aria-label="{{ $social['label'] }}" target="_blank" rel="noopener noreferrer" class="group block">
+                        <img src="{{ $img($social['icon']) }}" alt="" class="size-[38px] transition duration-200 group-hover:scale-90 group-hover:brightness-75 group-focus-visible:scale-90 group-focus-visible:brightness-75">
                     </a>
                 </li>
             @endforeach
@@ -83,12 +89,12 @@
     </section>
 
     {{-- Columna derecha: tarjeta de login --}}
-    <section class="mx-auto w-full max-w-[447px] rounded-[27px] bg-white px-[30px] pb-10 pt-8 shadow-[4px_4px_4px_rgba(0,0,0,0.25)]">
+    <section class="mx-auto w-full max-w-[447px] rounded-[27px] lg:[zoom:1.2] bg-white px-[30px] pb-10 pt-8 shadow-[4px_4px_4px_rgba(0,0,0,0.25)]">
         <div class="relative mx-auto h-[153px] w-[126px] overflow-hidden">
             <img src="{{ $img('logo-completo.png') }}" alt="InnovArTec" class="absolute left-[-32.26%] top-[-2.85%] h-[126.45%] w-[159.35%] max-w-none">
         </div>
 
-        <h1 class="mt-2 text-center font-display text-[40px] leading-tight text-innov-title">¡Que alegría verte!</h1>
+        <h1 class="mt-2 text-center font-display text-[30px] sm:text-[40px] leading-tight text-innov-title">¡Que alegría verte!</h1>
         <p class="mt-1 text-center text-xl font-medium">Ingresa para continuar aprendiendo</p>
 
         @if ($errorMessage)
@@ -113,13 +119,14 @@
                     <img src="{{ $img('icon-candado.svg') }}" alt="" class="pointer-events-none absolute left-3 top-1/2 size-[34px] -translate-y-1/2">
                     <input id="login-password" wire:model="password" autocomplete="current-password" x-bind:type="showPassword ? 'text' : 'password'" type="password" class="{{ $inputClass }} pr-14">
                     <button type="button" x-on:click="showPassword = ! showPassword" x-bind:aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'" class="absolute right-4 top-1/2 -translate-y-1/2">
-                        <img src="{{ $img('icon-ojo.svg') }}" alt="" class="size-[29px]" x-bind:class="showPassword ? 'opacity-50' : ''">
+                        {{-- Ojo abierto = la contraseña se ve; ojo tachado = oculta. --}}
+                        <img src="{{ $img('icon-ojo-cerrado.svg') }}" alt="" class="h-auto w-[29px]" x-bind:src="showPassword ? '{{ $img('icon-ojo.svg') }}' : '{{ $img('icon-ojo-cerrado.svg') }}'">
                     </button>
                 </div>
                 @error('password') <span class="text-xs text-red-600">{{ $message }}</span> @enderror
             </div>
 
-            <button type="submit" wire:loading.attr="disabled" class="flex h-[47px] w-full items-center justify-center rounded-[5px] bg-innov-green text-xl font-extrabold text-innov-green-soft transition hover:brightness-95 disabled:opacity-60">
+            <button type="submit" wire:loading.attr="disabled" class="flex h-[47px] w-full items-center justify-center rounded-[5px] bg-innov-green text-xl font-extrabold text-white transition hover:bg-[#6fa11a] hover:shadow-md disabled:opacity-60">
                 Iniciar sesión
             </button>
 
@@ -130,4 +137,5 @@
             </div>
         </form>
     </section>
+</div>
 </div>
