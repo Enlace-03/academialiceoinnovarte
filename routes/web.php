@@ -38,6 +38,10 @@ use Illuminate\Support\Facades\Storage;
 // distinto.
 Route::get('/login', Login::class)->middleware('guest')->name('login');
 
+// Bienvenida (Figma "Plataforma Innovartec"): solo invitados; con sesión
+// activa el guard 'guest' redirige al portal.
+Route::view('/bienvenida', 'welcome')->middleware('guest')->name('welcome');
+
 /**
  * Mismo botón, mismo endpoint, para cierre normal (cuenta propia) y para
  * "Terminar clase" (sesión entregada, Hito 3b-2) — la vista decide el texto

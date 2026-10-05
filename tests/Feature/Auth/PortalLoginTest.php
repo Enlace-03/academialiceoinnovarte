@@ -23,9 +23,9 @@ class PortalLoginTest extends TestCase
         $this->seed(RoleLevelSeeder::class);
     }
 
-    public function test_guest_is_redirected_from_home_to_login(): void
+    public function test_guest_is_redirected_from_home_to_welcome(): void
     {
-        $this->get(route('portal.home'))->assertRedirect(route('login'));
+        $this->get(route('portal.home'))->assertRedirect(route('welcome'));
     }
 
     public function test_authenticated_user_is_redirected_away_from_login(): void

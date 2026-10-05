@@ -6,6 +6,27 @@
 @theme {
     --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
         'Segoe UI Symbol', 'Noto Color Emoji';
+
+    /* Marca InnovArTec (Figma "Plataforma Innovartec"): bienvenida y login. */
+    --font-body: var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+    --font-display: var(--font-fredoka), var(--font-nunito), ui-sans-serif, system-ui, sans-serif;
+
+    --color-innov-bg: #f7f0ff;
+    --color-innov-cream: #fffbf4;
+    --color-innov-ink: #2c2c2c;
+    --color-innov-purple: #8a1fdc;
+    --color-innov-purple-soft: #f2e5ff;
+    --color-innov-purple-border: #b988db;
+    --color-innov-lilac: #eeddff;
+    --color-innov-title: #9a57c6;
+    --color-innov-tagline: #ac60e7;
+    --color-innov-green: #84bf23;
+    --color-innov-green-soft: #dcf1a6;
+    --color-innov-orange: #fd9702;
+    --color-innov-orange-soft: #ffecc9;
+    --color-innov-yellow-soft: #fff2ca;
+    --color-innov-blue: #0291fc;
+    --color-innov-blue-soft: #d9f4ff;
 }
 
 @layer base {
@@ -25,4 +46,91 @@
     [role='button']:not(:disabled) {
         cursor: pointer;
     }
+}
+
+[x-cloak] {
+    display: none !important;
+}
+
+/*
+    Logo animado de la bienvenida (components/innovartec-logo.blade.php).
+    Cada capa de color entra en cascada (opacidad + subida con rebote) y,
+    al terminar el PNG original aparece encima (0,5 s) y el SVG se retira después, sin hueco de opacidad. Con prefers-reduced-motion se
+    muestra solo el PNG, quieto.
+*/
+.logo-anim #morado,
+.logo-anim #verde,
+.logo-anim #amarillo_naranja,
+.logo-anim #azul,
+.logo-anim #blanco,
+.logo-anim #beige,
+.logo-anim #innov_\(negro\),
+.logo-anim #ar_\(morado\),
+.logo-anim #tec_\(azul\),
+.logo-anim #verde_base,
+.logo-anim #verde_2,
+.logo-anim #beige_1 {
+    transform-box: fill-box;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    .logo-anim #morado,
+    .logo-anim #verde,
+    .logo-anim #amarillo_naranja,
+    .logo-anim #azul,
+    .logo-anim #blanco,
+    .logo-anim #beige,
+    .logo-anim #innov_\(negro\),
+    .logo-anim #ar_\(morado\),
+    .logo-anim #tec_\(azul\) {
+        transform-origin: 50% 100%;
+        animation: logo-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    .logo-anim #morado { animation-delay: 0s; }
+    .logo-anim #verde { animation-delay: 0.15s; }
+    .logo-anim #amarillo_naranja { animation-delay: 0.3s; }
+    .logo-anim #azul { animation-delay: 0.45s; }
+    .logo-anim #blanco { animation-delay: 0.55s; }
+    .logo-anim #beige { animation-delay: 0.6s; }
+    .logo-anim #innov_\(negro\) { animation-delay: 0.8s; }
+    .logo-anim #ar_\(morado\) { animation-delay: 0.95s; }
+    .logo-anim #tec_\(azul\) { animation-delay: 1.1s; }
+
+    /* El PNG original (con degradados) aparece encima en 0,5 s; el SVG se retira justo después, sin dejar ver el fondo en medio. */
+    .logo-anim { animation: logo-svg-out 0.01s linear 1.67s forwards; }
+    .logo-final { opacity: 0; animation: logo-final-in 0.3s ease-out 1.4s forwards; }
+
+    /* Destello blanco justo en el relevo SVG -> PNG: lo tapa y deja el cambio limpio. */
+    .logo-flash { animation: logo-flash 0.8s ease-out 1.35s both; }
+}
+
+@keyframes logo-in {
+    from { opacity: 0; transform: translateY(28px) scale(0.85); }
+    to { opacity: 1; transform: none; }
+}
+
+@keyframes logo-svg-out {
+    to { opacity: 0; }
+}
+
+@keyframes logo-flash {
+    0% { opacity: 0; transform: scale(0.85); }
+    40% { opacity: 0.95; transform: scale(1); }
+    100% { opacity: 0; transform: scale(1.1); }
+}
+
+@keyframes logo-final-in {
+    to { opacity: 1; }
+}
+
+/* El destello: invisible por defecto (y sin animación con reduced-motion). */
+.logo-flash {
+    opacity: 0;
+    background: radial-gradient(farthest-side, #fff 70%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* Sin animación (reduced-motion) el PNG es el logo; el SVG solo existe para la entrada. */
+@media (prefers-reduced-motion: reduce) {
+    .logo-anim { display: none; }
 }
