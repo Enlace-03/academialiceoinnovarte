@@ -14,7 +14,7 @@ class DatabaseSeeder extends Seeder
         // super admin con una contraseña adivinable si alguien olvida definir
         // la variable en un entorno real. Se valida ANTES de sembrar nada para
         // no dejar la base a medias.
-        $superAdminPassword = env('SEED_SUPER_ADMIN_PASSWORD');
+        $superAdminPassword = config('seeding.super_admin_password');
 
         if (! is_string($superAdminPassword) || $superAdminPassword === '') {
             throw new RuntimeException('Define SEED_SUPER_ADMIN_PASSWORD antes de correr este seeder');
